@@ -60,25 +60,17 @@ function Timeline({ stage, status, dataFreshness }) {
 
 const fallbackSvg = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23404040'/><circle cx='50' cy='40' r='20' fill='%23666'/><path d='M20 100 Q50 60 80 100' fill='%23666'/></svg>";
 
-function PitchPlayer({ player, onPlayerClick }) {
-  const isCap = player.is_captain;
-  const isVCap = player.is_vice_captain;
-  const displayPts = isCap ? (player.ep_next * 2).toFixed(1) : player.ep_next;
+function PitchPlayer({ player }) {
+  const displayPts = player.ep_next;
 
   return (
-    <div 
-      className={`pitch-player ${player.is_new ? 'new-player' : ''} ${onPlayerClick ? 'clickable' : ''}`}
-      onClick={() => onPlayerClick && onPlayerClick(player.id, isCap ? 'captain' : (isVCap ? 'vice_captain' : 'none'))}
-      title={onPlayerClick ? "Click to toggle Captain/Vice-Captain" : ""}
-    >
+    <div className={`pitch-player ${player.is_new ? 'new-player' : ''}`}>
       <div className="player-image-container">
         <img 
           src={player.photo_url || fallbackSvg} 
           alt={player.name} 
           onError={(e) => { e.target.onerror = null; e.target.src = fallbackSvg; }}
         />
-        {isCap && <div className="captain-badge">C</div>}
-        {isVCap && <div className="vice-captain-badge">V</div>}
       </div>
       <div className="name">
         {player.name}
@@ -88,16 +80,16 @@ function PitchPlayer({ player, onPlayerClick }) {
   )
 }
 
-function Pitch({ starters, bench, title, formation, onPlayerClick }) {
+function Pitch({ starters, bench, title, formation }) {
   if (!starters || starters.length === 0) return <div className="pitch-container empty"></div>
   return (
     <div className="pitch-container">
       {formation && <div className="formation-badge">{formation}</div>}
-      <div className="position-row">{starters.filter(p => p.position_id === 4).map(p => <PitchPlayer key={p.id} player={p} onPlayerClick={onPlayerClick} />)}</div>
-      <div className="position-row">{starters.filter(p => p.position_id === 3).map(p => <PitchPlayer key={p.id} player={p} onPlayerClick={onPlayerClick} />)}</div>
-      <div className="position-row">{starters.filter(p => p.position_id === 2).map(p => <PitchPlayer key={p.id} player={p} onPlayerClick={onPlayerClick} />)}</div>
-      <div className="position-row">{starters.filter(p => p.position_id === 1).map(p => <PitchPlayer key={p.id} player={p} onPlayerClick={onPlayerClick} />)}</div>
-      <div className="bench-row">{bench.map(p => <PitchPlayer key={p.id} player={p} onPlayerClick={onPlayerClick} />)}</div>
+      <div className="position-row">{starters.filter(p => p.position_id === 4).map(p => <PitchPlayer key={p.id} player={p} />)}</div>
+      <div className="position-row">{starters.filter(p => p.position_id === 3).map(p => <PitchPlayer key={p.id} player={p} />)}</div>
+      <div className="position-row">{starters.filter(p => p.position_id === 2).map(p => <PitchPlayer key={p.id} player={p} />)}</div>
+      <div className="position-row">{starters.filter(p => p.position_id === 1).map(p => <PitchPlayer key={p.id} player={p} />)}</div>
+      <div className="bench-row">{bench.map(p => <PitchPlayer key={p.id} player={p} />)}</div>
     </div>
   )
 }
@@ -232,34 +224,6 @@ function App() {
     setImage(null)
     setError(null)
   }
-
-  const toggleCaptaincy = (playerId, currentRole) => {
-    if (!jobData || !jobData.original_team) return;
-    
-    // Create deep copy of jobData to trigger re-render
-    const newData = JSON.parse(JSON.stringify(jobData));
-    const allOriginalPlayers = [...newData.original_team.starters, ...newData.original_team.bench];
-    
-    let nextRole = 'none';
-    if (currentRole === 'none') nextRole = 'captain';
-    else if (currentRole === 'captain') nextRole = 'vice_captain';
-    else nextRole = 'none';
-
-    // Clear existing roles to maintain exactly one C and one V
-    if (nextRole === 'captain') {
-      allOriginalPlayers.forEach(p => { if (p.is_captain) p.is_captain = false; });
-    } else if (nextRole === 'vice_captain') {
-      allOriginalPlayers.forEach(p => { if (p.is_vice_captain) p.is_vice_captain = false; });
-    }
-
-    const playerToUpdate = allOriginalPlayers.find(p => p.id === playerId);
-    if (playerToUpdate) {
-      playerToUpdate.is_captain = (nextRole === 'captain');
-      playerToUpdate.is_vice_captain = (nextRole === 'vice_captain');
-    }
-
-    setJobData(newData);
-  };
 
   useEffect(() => {
     let interval;
@@ -518,15 +482,15 @@ function App() {
                 {jobData.transfers.length === 0 ? (
                   <div className="pitch-comparison-section" style={{ display: 'flex', justifyContent: 'center' }}>
                     <div className="pitch-col" style={{ maxWidth: '500px', flex: 'none', width: '100%' }}>
-                      <h3>Your Optimal Squad <span style={{fontSize: '0.6rem', color: '#888', fontWeight: 'normal'}}>(Click player to change C/V)</span></h3>
-                      <Pitch starters={jobData.original_team.starters} bench={jobData.original_team.bench} formation={jobData.formation} onPlayerClick={toggleCaptaincy} />
+                      <h3>Your Optimal Squad</h3>
+                      <Pitch starters={jobData.original_team.starters} bench={jobData.original_team.bench} formation={jobData.formation} />
                     </div>
                   </div>
                 ) : (
                   <div className="pitch-comparison-section">
                     <div className="pitch-col">
-                      <h3>Original Team <span style={{fontSize: '0.6rem', color: '#888', fontWeight: 'normal'}}>(Click player to change C/V)</span></h3>
-                      <Pitch starters={jobData.original_team.starters} bench={jobData.original_team.bench} formation={jobData.formation} onPlayerClick={toggleCaptaincy} />
+                      <h3>Original Team</h3>
+                      <Pitch starters={jobData.original_team.starters} bench={jobData.original_team.bench} formation={jobData.formation} />
                     </div>
                     <div className="pitch-col">
                       <h3>AI Suggested Team</h3>
