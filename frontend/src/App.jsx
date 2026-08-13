@@ -60,32 +60,44 @@ function Timeline({ stage, status, dataFreshness }) {
 
 const fallbackSvg = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23404040'/><circle cx='50' cy='40' r='20' fill='%23666'/><path d='M20 100 Q50 60 80 100' fill='%23666'/></svg>";
 
-function PitchPlayer({ player }) {
+function PitchPlayer({ player, onPlayerClick }) {
+  const isCap = player.is_captain;
+  const isVCap = player.is_vice_captain;
+  const displayPts = isCap ? (player.ep_next * 2).toFixed(1) : player.ep_next;
+
   return (
-    <div className={`pitch-player ${player.is_new ? 'new-player' : ''}`}>
-      <img 
-        src={player.photo_url || fallbackSvg} 
-        alt={player.name} 
-        onError={(e) => { e.target.onerror = null; e.target.src = fallbackSvg; }}
-      />
+    <div 
+      className={`pitch-player ${player.is_new ? 'new-player' : ''} ${onPlayerClick ? 'clickable' : ''}`}
+      onClick={() => onPlayerClick && onPlayerClick(player.id, isCap ? 'captain' : (isVCap ? 'vice_captain' : 'none'))}
+      title={onPlayerClick ? "Click to toggle Captain/Vice-Captain" : ""}
+    >
+      <div className="player-image-container">
+        <img 
+          src={player.photo_url || fallbackSvg} 
+          alt={player.name} 
+          onError={(e) => { e.target.onerror = null; e.target.src = fallbackSvg; }}
+        />
+        {isCap && <div className="captain-badge">C</div>}
+        {isVCap && <div className="vice-captain-badge">V</div>}
+      </div>
       <div className="name">
         {player.name}
       </div>
-      <div className="points">{player.ep_next} pts</div>
+      <div className="points">{displayPts} pts</div>
     </div>
   )
 }
 
-function Pitch({ starters, bench, title, formation }) {
+function Pitch({ starters, bench, title, formation, onPlayerClick }) {
   if (!starters || starters.length === 0) return <div className="pitch-container empty"></div>
   return (
     <div className="pitch-container">
       {formation && <div className="formation-badge">{formation}</div>}
-      <div className="position-row">{starters.filter(p => p.position_id === 4).map(p => <PitchPlayer key={p.id} player={p} />)}</div>
-      <div className="position-row">{starters.filter(p => p.position_id === 3).map(p => <PitchPlayer key={p.id} player={p} />)}</div>
-      <div className="position-row">{starters.filter(p => p.position_id === 2).map(p => <PitchPlayer key={p.id} player={p} />)}</div>
-      <div className="position-row">{starters.filter(p => p.position_id === 1).map(p => <PitchPlayer key={p.id} player={p} />)}</div>
-      <div className="bench-row">{bench.map(p => <PitchPlayer key={p.id} player={p} />)}</div>
+      <div className="position-row">{starters.filter(p => p.position_id === 4).map(p => <PitchPlayer key={p.id} player={p} onPlayerClick={onPlayerClick} />)}</div>
+      <div className="position-row">{starters.filter(p => p.position_id === 3).map(p => <PitchPlayer key={p.id} player={p} onPlayerClick={onPlayerClick} />)}</div>
+      <div className="position-row">{starters.filter(p => p.position_id === 2).map(p => <PitchPlayer key={p.id} player={p} onPlayerClick={onPlayerClick} />)}</div>
+      <div className="position-row">{starters.filter(p => p.position_id === 1).map(p => <PitchPlayer key={p.id} player={p} onPlayerClick={onPlayerClick} />)}</div>
+      <div className="bench-row">{bench.map(p => <PitchPlayer key={p.id} player={p} onPlayerClick={onPlayerClick} />)}</div>
     </div>
   )
 }
@@ -105,6 +117,58 @@ function AILoader({ size = 180, text = "Analyzing" }) {
           </span>
         ))}
         <div className="ai-loader-circle"></div>
+      </div>
+    </div>
+  );
+}
+
+function FixtureDifficultyTable({ fdrData }) {
+  if (!fdrData || fdrData.length === 0) return null;
+  
+  const getFdrColorClass = (diff) => {
+    switch (diff) {
+      case 1: return 'fdr-1';
+      case 2: return 'fdr-2';
+      case 3: return 'fdr-3';
+      case 4: return 'fdr-4';
+      case 5: return 'fdr-5';
+      default: return 'fdr-3';
+    }
+  };
+
+  return (
+    <div className="panel fdr-panel">
+      <div className="panel-header-row">
+        <h2 className="panel-header">Fixture Difficulty Rating (FDR)</h2>
+      </div>
+      <div className="fdr-table-container">
+        <table className="fdr-table">
+          <thead>
+            <tr>
+              <th className="team-col">Team</th>
+              {fdrData[0].fixtures.map((f, i) => (
+                <th key={i}>GW{f.event}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {fdrData.map(team => (
+              <tr key={team.id}>
+                <td className="team-col">
+                  <div className="fdr-team-info">
+                    <img src={team.logo} alt={team.name} className="fdr-logo" />
+                    <span className="fdr-team-name">{team.name}</span>
+                  </div>
+                </td>
+                {team.fixtures.map((f, i) => (
+                  <td key={i} className={`fdr-cell ${getFdrColorClass(f.difficulty)}`}>
+                    <div className="fdr-opponent">{f.opponent} ({f.is_home ? 'H' : 'A'})</div>
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
@@ -168,6 +232,34 @@ function App() {
     setImage(null)
     setError(null)
   }
+
+  const toggleCaptaincy = (playerId, currentRole) => {
+    if (!jobData || !jobData.original_team) return;
+    
+    // Create deep copy of jobData to trigger re-render
+    const newData = JSON.parse(JSON.stringify(jobData));
+    const allOriginalPlayers = [...newData.original_team.starters, ...newData.original_team.bench];
+    
+    let nextRole = 'none';
+    if (currentRole === 'none') nextRole = 'captain';
+    else if (currentRole === 'captain') nextRole = 'vice_captain';
+    else nextRole = 'none';
+
+    // Clear existing roles to maintain exactly one C and one V
+    if (nextRole === 'captain') {
+      allOriginalPlayers.forEach(p => { if (p.is_captain) p.is_captain = false; });
+    } else if (nextRole === 'vice_captain') {
+      allOriginalPlayers.forEach(p => { if (p.is_vice_captain) p.is_vice_captain = false; });
+    }
+
+    const playerToUpdate = allOriginalPlayers.find(p => p.id === playerId);
+    if (playerToUpdate) {
+      playerToUpdate.is_captain = (nextRole === 'captain');
+      playerToUpdate.is_vice_captain = (nextRole === 'vice_captain');
+    }
+
+    setJobData(newData);
+  };
 
   useEffect(() => {
     let interval;
@@ -310,47 +402,69 @@ function App() {
         {/* CENTER COLUMN */}
         <div className="col-center workspace-col">
           {!isComplete && !isProcessing && (
-            <div className="panel upload-panel">
-              <h2 className="panel-header text-center">Upload your FPL team screenshot</h2>
-              <p className="upload-desc">
-                Upload a screenshot of your current FPL team. The app will identify your players, check current FPL data, compare transfer options, and explain the strongest recommendation.
-              </p>
+            <div className="panel upload-panel hero-upload">
+              <div className="upload-header-content">
+                <h1 className="hero-title">FPL AI Manager</h1>
+                <p className="hero-subtitle">Optimize your squad using Computer Vision & AI</p>
+                <p className="upload-desc">
+                  Upload a screenshot of your "Pitch View". The AI will detect your players, calculate optimal transfers based on long-term FDR, and protect your budget.
+                </p>
+              </div>
               
               <div 
-                className="upload-area"
+                className={`upload-area ${image ? 'has-image' : ''}`}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={handleDrop}
                 onClick={() => fileInputRef.current.click()}
               >
+                <div className="upload-icon upload-football-animation">
+                   <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                     <circle cx="12" cy="12" r="10"></circle>
+                     <polygon points="12 6 16 9 14.5 14 9.5 14 8 9"></polygon>
+                     <line x1="12" y1="6" x2="12" y2="2"></line>
+                     <line x1="16" y1="9" x2="20.5" y2="7"></line>
+                     <line x1="14.5" y1="14" x2="18" y2="18.5"></line>
+                     <line x1="9.5" y1="14" x2="6" y2="18.5"></line>
+                     <line x1="8" y1="9" x2="3.5" y2="7"></line>
+                   </svg>
+                </div>
                 {image ? (
-                  <div className="selected-file">✅ {image.name} ({(image.size/1024).toFixed(1)} KB)</div>
+                  <div className="selected-file">✅ {image.name} <span className="file-size">({(image.size/1024).toFixed(1)} KB)</span></div>
                 ) : (
-                  <div>Drop screenshot to upload<br/>or Click to Browse</div>
+                  <div className="upload-text">
+                     <strong>Drop screenshot on the pitch</strong><br/>
+                     <span className="upload-subtext">or click to browse your files</span>
+                  </div>
                 )}
                 <input type="file" ref={fileInputRef} onChange={(e) => setImage(e.target.files[0])} hidden accept="image/png, image/jpeg, image/webp"/>
               </div>
 
               {image && (
                 <div className="image-actions">
-                  <button className="btn-secondary" onClick={(e) => {e.stopPropagation(); setImage(null)}}>Remove</button>
+                  <button className="btn-secondary remove-btn" onClick={(e) => {e.stopPropagation(); setImage(null)}}>Remove Image</button>
                 </div>
               )}
 
-              <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', justifyContent: 'center' }}>
-                <div className="transfers-input-group">
-                  <label>Free Transfers</label>
-                  <input type="number" min="0" value={transfers} onChange={(e) => setTransfers(Number(e.target.value))} />
+              <div className="settings-container">
+                <div className="transfers-input-group modern-input">
+                  <label>Available Free Transfers</label>
+                  <div className="input-stepper">
+                    <button onClick={() => setTransfers(Math.max(0, transfers-1))}>-</button>
+                    <input type="number" min="0" max="5" value={transfers} readOnly />
+                    <button onClick={() => setTransfers(Math.min(5, transfers+1))}>+</button>
+                  </div>
                 </div>
               </div>
 
               {error && <div className="error-message">{error}</div>}
 
               <button className="btn-primary analyze-btn" onClick={() => handleSubmit(image)} disabled={!image || transfers < 0}>
-                Analyze Team
+                Analyze My Team
               </button>
               
               <div className="privacy-note">
-                Your screenshot is used temporarily for analysis and deleted after processing.
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{marginRight: 4, verticalAlign: '-1px'}}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                Your screenshot is processed in RAM and instantly deleted.
               </div>
             </div>
           )}
@@ -404,15 +518,15 @@ function App() {
                 {jobData.transfers.length === 0 ? (
                   <div className="pitch-comparison-section" style={{ display: 'flex', justifyContent: 'center' }}>
                     <div className="pitch-col" style={{ maxWidth: '500px', flex: 'none', width: '100%' }}>
-                      <h3>Your Optimal Squad</h3>
-                      <Pitch starters={jobData.original_team.starters} bench={jobData.original_team.bench} formation={jobData.formation} />
+                      <h3>Your Optimal Squad <span style={{fontSize: '0.6rem', color: '#888', fontWeight: 'normal'}}>(Click player to change C/V)</span></h3>
+                      <Pitch starters={jobData.original_team.starters} bench={jobData.original_team.bench} formation={jobData.formation} onPlayerClick={toggleCaptaincy} />
                     </div>
                   </div>
                 ) : (
                   <div className="pitch-comparison-section">
                     <div className="pitch-col">
-                      <h3>Original Team</h3>
-                      <Pitch starters={jobData.original_team.starters} bench={jobData.original_team.bench} formation={jobData.formation} />
+                      <h3>Original Team <span style={{fontSize: '0.6rem', color: '#888', fontWeight: 'normal'}}>(Click player to change C/V)</span></h3>
+                      <Pitch starters={jobData.original_team.starters} bench={jobData.original_team.bench} formation={jobData.formation} onPlayerClick={toggleCaptaincy} />
                     </div>
                     <div className="pitch-col">
                       <h3>AI Suggested Team</h3>
@@ -484,6 +598,9 @@ function App() {
                   </div>
                 </div>
               )}
+              
+              <FixtureDifficultyTable fdrData={metadata?.fdr_table} />
+
             </>
           )}
         </div>
