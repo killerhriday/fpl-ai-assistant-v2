@@ -358,15 +358,82 @@ function App() {
           )}
           
           {isComplete && (
-            <div className="panel upload-panel" style={{ textAlign: 'center' }}>
-              <h2 className="panel-header text-center">Analysis Complete</h2>
-              <p className="upload-desc" style={{ marginBottom: '1rem' }}>
-                {jobData.transfers?.length > 0 ? `We recommend ${jobData.transfers.length} transfer(s).` : 'No transfers needed this week.'}
-              </p>
-              <button className="btn-primary analyze-btn" onClick={handleReset} style={{ width: 'auto' }}>
-                Analyze Another Team
-              </button>
-            </div>
+            <>
+              <div className="panel upload-panel" style={{ textAlign: 'center' }}>
+                <h2 className="panel-header text-center">Analysis Complete</h2>
+                <p className="upload-desc" style={{ marginBottom: '1rem' }}>
+                  {jobData.transfers?.length > 0 ? `We recommend ${jobData.transfers.length} transfer(s).` : 'No transfers needed this week.'}
+                </p>
+                <button className="btn-primary analyze-btn" onClick={handleReset} style={{ width: 'auto' }}>
+                  Analyze Another Team
+                </button>
+              </div>
+
+              {jobData.budget && (
+                <div className="budget-metrics-row">
+                  <div className="budget-card">
+                    <div className="budget-label">Squad Value</div>
+                    <div className="budget-value">£{jobData.budget.squad_value.toFixed(1)}m</div>
+                  </div>
+                  <div className="budget-card">
+                    <div className="budget-label">In The Bank</div>
+                    <div className="budget-value">£{jobData.budget.in_the_bank.toFixed(1)}m</div>
+                  </div>
+                  <div className="budget-card total">
+                    <div className="budget-label">Total Budget</div>
+                    <div className="budget-value">£{jobData.budget.total_budget.toFixed(1)}m</div>
+                  </div>
+                </div>
+              )}
+
+              <div className="panel result-panel">
+                <div className="recommendation-header">
+                  <h2>{jobData.transfers.length > 0 ? `Make ${jobData.transfers.length} transfer(s)` : '✅ No transfers needed this week'}</h2>
+                  <p>{jobData.message}</p>
+                </div>
+                
+                {jobData.transfers.length === 0 ? (
+                  <div className="pitch-comparison-section" style={{ display: 'flex', justifyContent: 'center' }}>
+                    <div className="pitch-col" style={{ maxWidth: '500px', flex: 'none', width: '100%' }}>
+                      <h3>Your Optimal Squad</h3>
+                      <Pitch starters={jobData.original_team.starters} bench={jobData.original_team.bench} />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="pitch-comparison-section">
+                    <div className="pitch-col">
+                      <h3>Original Team</h3>
+                      <Pitch starters={jobData.original_team.starters} bench={jobData.original_team.bench} />
+                    </div>
+                    <div className="pitch-col">
+                      <h3>AI Suggested Team</h3>
+                      <Pitch starters={jobData.suggested_team.starters} bench={jobData.suggested_team.bench} />
+                    </div>
+                  </div>
+                )}
+
+                {jobData.transfers.length > 0 && (
+                  <div className="transfer-recommendations">
+                    <h3 className="section-title">Recommended Transfers</h3>
+                    {jobData.transfers.map((t, idx) => (
+                      <div key={idx} className="transfer-card">
+                        <div className="transfer-players">
+                          <span className="player-out">{t.out_player_name} OUT</span> ➔ <span className="player-in">{t.in_player_name} IN</span>
+                        </div>
+                        <div className="transfer-stats">
+                          <span>Net Gain: <strong className="success">+{t.projected_gain_1gw.toFixed(1)} pts</strong></span>
+                          <span>Hit Cost: <strong>-{t.hit_cost} pts</strong></span>
+                          <span>Price diff: {(t.new_price - t.current_price).toFixed(1)}m</span>
+                        </div>
+                        <div className="transfer-reason">
+                          <strong>Reason:</strong> {t.reasons.join(', ')}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
           )}
         </div>
 
@@ -385,13 +452,23 @@ function App() {
           
           {isComplete && jobData.global_injuries && (
             <div className="panel status-board">
-              <h2 className="panel-header">FPL Player Status Board</h2>
+              <div className="panel-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <h2 className="panel-header" style={{ marginBottom: 0 }}>FPL Player Status Board</h2>
+              </div>
               <div className="injury-list">
                 {jobData.global_injuries.map((inj, idx) => (
                   <div key={idx} className="injury-row" title={inj.news}>
-                    <span className={`status-dot ${inj.color}`}></span>
-                    <span className="injury-name">{inj.player_name}</span>
-                    <span className="injury-status">{inj.status}</span>
+                    <div className="injury-photo-container">
+                      <img src={inj.photo_url} alt={inj.player_name} className="injury-photo" />
+                      <span className={`status-dot ${inj.color}`}></span>
+                    </div>
+                    <div className="injury-info">
+                      <span className={`injury-name text-${inj.color}`}>{inj.player_name} <span className="injury-team">({inj.team_name})</span></span>
+                      <span className="injury-status">
+                        {inj.status} 
+                        {inj.return_date && <span className="injury-return"> • Back: {inj.return_date}</span>}
+                      </span>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -400,75 +477,6 @@ function App() {
         </div>
       </div>
 
-      {/* BOTTOM ANALYTICS */}
-      {isComplete && (
-        <div className="bottom-analytics-section">
-          {jobData.budget && (
-            <div className="budget-metrics-row">
-              <div className="budget-card">
-                <div className="budget-label">Squad Value</div>
-                <div className="budget-value">£{jobData.budget.squad_value.toFixed(1)}m</div>
-              </div>
-              <div className="budget-card">
-                <div className="budget-label">In The Bank</div>
-                <div className="budget-value">£{jobData.budget.in_the_bank.toFixed(1)}m</div>
-              </div>
-              <div className="budget-card total">
-                <div className="budget-label">Total Budget</div>
-                <div className="budget-value">£{jobData.budget.total_budget.toFixed(1)}m</div>
-              </div>
-            </div>
-          )}
-
-          <div className="panel result-panel">
-            <div className="recommendation-header">
-              <h2>{jobData.transfers.length > 0 ? `Make ${jobData.transfers.length} transfer(s)` : '✅ No transfers needed this week'}</h2>
-              <p>{jobData.message}</p>
-            </div>
-            
-            {jobData.transfers.length === 0 ? (
-              <div className="pitch-comparison-section" style={{ display: 'flex', justifyContent: 'center' }}>
-                <div className="pitch-col" style={{ maxWidth: '500px', flex: 'none', width: '100%' }}>
-                  <h3>Your Optimal Squad</h3>
-                  <Pitch starters={jobData.original_team.starters} bench={jobData.original_team.bench} />
-                </div>
-              </div>
-            ) : (
-              <div className="pitch-comparison-section">
-                <div className="pitch-col">
-                  <h3>Original Team</h3>
-                  <Pitch starters={jobData.original_team.starters} bench={jobData.original_team.bench} />
-                </div>
-                <div className="pitch-col">
-                  <h3>AI Suggested Team</h3>
-                  <Pitch starters={jobData.suggested_team.starters} bench={jobData.suggested_team.bench} />
-                </div>
-              </div>
-            )}
-
-            {jobData.transfers.length > 0 && (
-              <div className="transfer-recommendations">
-                <h3 className="section-title">Recommended Transfers</h3>
-                {jobData.transfers.map((t, idx) => (
-                  <div key={idx} className="transfer-card">
-                    <div className="transfer-players">
-                      <span className="player-out">{t.out_player_name} OUT</span> ➔ <span className="player-in">{t.in_player_name} IN</span>
-                    </div>
-                    <div className="transfer-stats">
-                      <span>Net Gain: <strong className="success">+{t.projected_gain_1gw.toFixed(1)} pts</strong></span>
-                      <span>Hit Cost: <strong>-{t.hit_cost} pts</strong></span>
-                      <span>Price diff: {(t.new_price - t.current_price).toFixed(1)}m</span>
-                    </div>
-                    <div className="transfer-reason">
-                      <strong>Reason:</strong> {t.reasons.join(', ')}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   )
 }

@@ -88,19 +88,11 @@ def process_job(request_id: str, image_bytes: bytes, transfers: int, strategy: s
         job.stage = "Checking squad constraints"
         job.message = "Reconstructing your squad and checking FPL rules."
         
-        matched_players.sort(key=lambda x: float(x.get('ep_next', 0) or 0), reverse=True)
-        starters = []
-        bench = []
-        counts = {1: 0, 2: 0, 3: 0, 4: 0}
-        limits = {1: 1, 2: 5, 3: 5, 4: 3}
-        
-        for p in matched_players:
-            pos = p['element_type']
-            if len(starters) < 11 and counts[pos] < limits[pos]:
-                starters.append(p)
-                counts[pos] += 1
-            elif len(starters) + len(bench) < 15:
-                bench.append(p)
+        # We rely on the top-to-bottom order from the OCR engine.
+        # The first 11 players found on the screen are the starting XI.
+        # The remaining players found at the bottom are the bench.
+        starters = matched_players[:11]
+        bench = matched_players[11:15]
                 
         # Stage 7 & 8: Recommendations
         job.stage = "Ranking transfer candidates"

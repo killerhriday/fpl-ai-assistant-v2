@@ -201,7 +201,7 @@ body {
 
 .pitch-comparison-section {
   display: flex;
-  gap: 1.5rem;
+  gap: 1rem;
   margin-bottom: 2.5rem;
 }
 .pitch-col { flex: 1; }
@@ -240,11 +240,12 @@ body {
 .pitch-container.empty { min-height: 300px; background: transparent; border: 1px dashed var(--border); }
 .pitch-container.empty::before, .pitch-container.empty::after { display: none; }
 
-.position-row, .bench-row { display: flex; justify-content: center; gap: 0.5rem; position: relative; z-index: 1; }
+.position-row, .bench-row { display: flex; justify-content: center; gap: 0.25rem; position: relative; z-index: 1; }
 .bench-row { border-top: 1px solid var(--border); padding-top: 1rem; margin-top: 0.5rem; }
-.pitch-player { display: flex; flex-direction: column; align-items: center; width: 48px; }
-.pitch-player img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: var(--border); border: 1px solid var(--border-light); margin-bottom: 4px; }
-.pitch-player .name { font-size: 0.6rem; font-weight: 500; background: var(--bg-color); color: var(--text-main); padding: 2px 4px; border-radius: 4px; text-align: center; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border: 1px solid var(--border); }
+.pitch-player { display: flex; flex-direction: column; align-items: center; width: 44px; transition: transform 0.2s; }
+.pitch-player:hover { transform: translateY(-3px); }
+.pitch-player img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: var(--border); border: 1px solid var(--border-light); margin-bottom: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+.pitch-player .name { font-size: 0.55rem; font-weight: 500; background: var(--bg-color); color: var(--text-main); padding: 2px 4px; border-radius: 4px; text-align: center; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border: 1px solid var(--border); }
 .pitch-player .points { font-size: 0.55rem; color: var(--text-muted); margin-top: 2px; }
 .new-player img { border-color: var(--success); box-shadow: 0 0 0 1px var(--success); }
 
@@ -292,14 +293,42 @@ body {
 .news-item strong { color: var(--text-main); display: block; margin-bottom: 0.2rem; }
 
 /* Status Board */
-.injury-list { display: flex; flex-direction: column; gap: 0.5rem; }
-.injury-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; padding: 0.5rem 0; border-bottom: 1px solid var(--border); }
+.injury-list { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 0.5rem; 
+  max-height: 350px; 
+  overflow-y: auto; 
+  padding-right: 8px;
+}
+
+/* Custom smooth scrollbar */
+.injury-list::-webkit-scrollbar { width: 6px; }
+.injury-list::-webkit-scrollbar-track { background: var(--panel-bg); border-radius: 4px; }
+.injury-list::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 4px; }
+.injury-list::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
+.injury-row { display: flex; align-items: flex-start; gap: 0.5rem; font-size: 0.85rem; padding: 0.75rem 0; border-bottom: 1px solid var(--border); }
 .injury-row:last-child { border-bottom: none; }
-.status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.injury-photo-container { position: relative; display: flex; align-items: center; justify-content: center; margin-right: 0.25rem; }
+.injury-photo { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; background: var(--border); border: 1px solid var(--border-light); }
+.status-dot { width: 10px; height: 10px; border-radius: 50%; position: absolute; bottom: -2px; right: -2px; border: 2px solid var(--panel-bg); }
 .status-dot.red { background-color: var(--danger); }
+.status-dot.darkred { background-color: #991b1b; }
 .status-dot.yellow { background-color: #fbbf24; }
-.injury-name { color: var(--text-main); flex: 1; }
+.status-dot.gray { background-color: #9ca3af; }
+
+/* Text Color Classes */
+.text-red { color: var(--danger); }
+.text-darkred { color: #f87171; } /* Slightly brighter red for dark themes so it's readable */
+.text-yellow { color: #fbbf24; }
+.text-gray { color: #9ca3af; }
+
+.injury-info { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.injury-name { font-weight: 600; }
+.injury-name:not([class*="text-"]) { color: var(--text-main); }
+.injury-team { color: var(--text-faint); font-weight: normal; font-size: 0.75rem; }
 .injury-status { color: var(--text-muted); font-size: 0.75rem; }
+.injury-return { color: var(--text-main); opacity: 0.8; }
 
 /* AI Summary */
 .ai-summary-text { font-size: 0.9rem; color: var(--text-muted); line-height: 1.6; }
@@ -315,15 +344,20 @@ body {
 
 .budget-metrics-row {
   display: flex;
-  gap: 24px;
+  gap: 16px;
 }
 .budget-card {
   flex: 1;
   background: var(--panel-bg);
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 20px;
+  padding: 16px 12px;
   text-align: center;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+}
+.budget-card:hover {
+  border-color: var(--text-muted);
+  transform: translateY(-2px);
 }
 .budget-card.total {
   border-color: var(--text-faint);

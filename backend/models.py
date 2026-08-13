@@ -33,10 +33,13 @@ class BudgetStatus(BaseModel):
 
 class InjuryAlert(BaseModel):
     player_name: str
+    team_name: str
     status: str
     color: str
     chance_of_playing: int
     news: str
+    return_date: str
+    photo_url: str
 
 class DataFreshness(BaseModel):
     age_seconds: int
