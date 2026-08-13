@@ -310,25 +310,27 @@ def generate_fpl_news(fpl_data: Dict) -> List[Dict[str, str]]:
     if not players:
         return news
         
-    # 1. Most Transferred In
+    # 1. Most Transferred In (Top 3)
     players_sorted_in = sorted(players, key=lambda x: x.get('transfers_in_event', 0), reverse=True)
-    top_in = players_sorted_in[0]
-    news.append({
-        "source": "FPL Market Watch",
-        "headline": f"{top_in['web_name']} is the most transferred in player!",
-        "summary": f"{top_in['web_name']} ({teams.get(top_in['team'], '')}) has been brought in by {top_in.get('transfers_in_event', 0):,} managers this Gameweek after strong recent performances.",
-        "url": "https://fantasy.premierleague.com/statistics"
-    })
+    for i in range(min(3, len(players_sorted_in))):
+        p = players_sorted_in[i]
+        news.append({
+            "source": "FPL Market Watch",
+            "headline": f"{p['web_name']} is highly transferred in!",
+            "summary": f"{p['web_name']} ({teams.get(p['team'], '')}) has been brought in by {p.get('transfers_in_event', 0):,} managers this Gameweek after strong recent performances.",
+            "url": "https://fantasy.premierleague.com/statistics"
+        })
     
-    # 2. Most Transferred Out
+    # 2. Most Transferred Out (Top 3)
     players_sorted_out = sorted(players, key=lambda x: x.get('transfers_out_event', 0), reverse=True)
-    top_out = players_sorted_out[0]
-    news.append({
-        "source": "FPL Market Watch",
-        "headline": f"Managers dropping {top_out['web_name']} in droves",
-        "summary": f"{top_out.get('transfers_out_event', 0):,} managers have sold {top_out['web_name']} ({teams.get(top_out['team'], '')}) ahead of the deadline. Is it time to sell?",
-        "url": "https://fantasy.premierleague.com/statistics"
-    })
+    for i in range(min(3, len(players_sorted_out))):
+        p = players_sorted_out[i]
+        news.append({
+            "source": "FPL Market Watch",
+            "headline": f"Managers dropping {p['web_name']} in droves",
+            "summary": f"{p.get('transfers_out_event', 0):,} managers have sold {p['web_name']} ({teams.get(p['team'], '')}) ahead of the deadline. Is it time to sell?",
+            "url": "https://fantasy.premierleague.com/statistics"
+        })
     
     # 3. Form Players
     try:
@@ -372,39 +374,56 @@ def generate_fpl_news(fpl_data: Dict) -> List[Dict[str, str]]:
     try:
         differentials = sorted([p for p in players if float(p.get('selected_by_percent', 0)) < 5.0 and float(p.get('form', 0)) > 3.0], key=lambda x: float(x.get('form', 0)), reverse=True)
         if differentials:
-            diff_names = ", ".join([f"{p['web_name']} ({p.get('selected_by_percent')}%)" for p in differentials[:3]])
-            news.append({
-                "source": "Differential Scout",
-                "headline": "Under the radar picks delivering points",
-                "summary": f"Looking for a differential to climb your mini-league? {diff_names} are highly in-form but owned by less than 5% of managers.",
-                "url": "https://fantasy.premierleague.com/statistics"
-            })
+            for i in range(min(2, len(differentials))):
+                p = differentials[i]
+                news.append({
+                    "source": "Differential Scout",
+                    "headline": f"Differential pick: {p['web_name']}",
+                    "summary": f"Looking for a differential? {p['web_name']} is highly in-form ({p.get('form')} form) but owned by only {p.get('selected_by_percent')}% of managers.",
+                    "url": "https://fantasy.premierleague.com/statistics"
+                })
     except (ValueError, TypeError):
         pass
         
     # 7. Heavily Selected
     try:
         selected = sorted(players, key=lambda x: float(x.get('selected_by_percent', 0)), reverse=True)
-        top_sel = selected[0]
-        news.append({
-            "source": "Ownership Stats",
-            "headline": f"{top_sel['web_name']} remains highest owned player",
-            "summary": f"A staggering {top_sel.get('selected_by_percent', 0)}% of FPL managers own {top_sel['web_name']}. Not owning him could be a huge risk.",
-            "url": "https://fantasy.premierleague.com/statistics"
-        })
+        for i in range(min(2, len(selected))):
+            p = selected[i]
+            news.append({
+                "source": "Ownership Stats",
+                "headline": f"{p['web_name']} remains a highly owned template player",
+                "summary": f"A staggering {p.get('selected_by_percent', 0)}% of FPL managers own {p['web_name']}. Not owning him could be a huge risk.",
+                "url": "https://fantasy.premierleague.com/statistics"
+            })
     except (ValueError, TypeError):
         pass
         
-    # 8. Highest Expected Points
+    # 8. Highest Expected Points (Captaincy options)
     try:
         ep = sorted(players, key=lambda x: float(x.get('ep_next', 0)), reverse=True)
-        top_ep = ep[0]
-        news.append({
-            "source": "Algorithm Predictions",
-            "headline": f"Captaincy favorite: {top_ep['web_name']}",
-            "summary": f"{top_ep['web_name']} has the highest projected score for the upcoming Gameweek ({top_ep.get('ep_next')} pts). Make sure he is in your team.",
-            "url": "https://fantasy.premierleague.com/statistics"
-        })
+        for i in range(min(3, len(ep))):
+            p = ep[i]
+            news.append({
+                "source": "Algorithm Predictions",
+                "headline": f"Captaincy favorite: {p['web_name']}",
+                "summary": f"{p['web_name']} has one of the highest projected scores for the upcoming Gameweek ({p.get('ep_next')} pts). Make sure he is in your team.",
+                "url": "https://fantasy.premierleague.com/statistics"
+            })
+    except (ValueError, TypeError):
+        pass
+
+    # 9. Value Picks (Highest EP per Cost)
+    try:
+        value_picks = sorted([p for p in players if float(p.get('ep_next', 0)) > 3.0], key=lambda x: float(x.get('ep_next', 0)) / x.get('now_cost', 50), reverse=True)
+        for i in range(min(2, len(value_picks))):
+            p = value_picks[i]
+            news.append({
+                "source": "Value Scout",
+                "headline": f"Top Value Pick: {p['web_name']}",
+                "summary": f"At just £{p.get('now_cost', 50)/10}m, {p['web_name']} offers exceptional value with a projected {p.get('ep_next')} pts.",
+                "url": "https://fantasy.premierleague.com/statistics"
+            })
     except (ValueError, TypeError):
         pass
 
