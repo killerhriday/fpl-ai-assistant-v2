@@ -208,22 +208,44 @@ body {
 .pitch-col h3 { font-size: 0.85rem; text-transform: uppercase; font-weight: 500; letter-spacing: 0.05em; text-align: center; margin-bottom: 1rem; color: var(--text-muted); }
 
 .pitch-container {
-  background: var(--bg-color);
-  border: 1px solid var(--border);
+  background-color: #163824; /* Deep grass green */
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 45px,
+    rgba(255, 255, 255, 0.04) 45px,
+    rgba(255, 255, 255, 0.04) 90px
+  );
+  border: 1px solid #235436;
   border-radius: 8px;
   padding: 1.5rem 0.5rem;
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
   position: relative;
+  overflow: hidden;
+}
+.formation-badge {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.75rem;
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  z-index: 2;
 }
 /* Tactical board lines */
 .pitch-container::before {
   content: '';
   position: absolute;
   top: 50%; left: 0; right: 0;
-  height: 1px;
-  background: var(--border);
+  height: 2px;
+  background: rgba(255, 255, 255, 0.15);
   z-index: 0;
 }
 .pitch-container::after {
@@ -231,9 +253,9 @@ body {
   position: absolute;
   top: 50%; left: 50%;
   transform: translate(-50%, -50%);
-  width: 60px; height: 60px;
+  width: 70px; height: 70px;
   border-radius: 50%;
-  border: 1px solid var(--border);
+  border: 2px solid rgba(255, 255, 255, 0.15);
   z-index: 0;
 }
 
@@ -241,7 +263,7 @@ body {
 .pitch-container.empty::before, .pitch-container.empty::after { display: none; }
 
 .position-row, .bench-row { display: flex; justify-content: center; gap: 0.25rem; position: relative; z-index: 1; }
-.bench-row { border-top: 1px solid var(--border); padding-top: 1rem; margin-top: 0.5rem; }
+.bench-row { border-top: 2px solid rgba(255, 255, 255, 0.15); padding-top: 1rem; margin-top: 0.5rem; }
 .pitch-player { display: flex; flex-direction: column; align-items: center; width: 44px; transition: transform 0.2s; }
 .pitch-player:hover { transform: translateY(-3px); }
 .pitch-player img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: var(--border); border: 1px solid var(--border-light); margin-bottom: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
@@ -284,12 +306,116 @@ body {
 .status-label.completed { color: var(--text-muted); }
 
 .tech-details { margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border); font-size: 0.8rem; color: var(--text-muted); }
+
+/* ── Gameweek Fixtures Board ── */
+.fixtures-board { margin-top: 1.5rem; }
+.fixtures-list-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.fixture-card-row {
+  background: var(--bg-color);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.fixture-card-row:hover { border-color: var(--text-faint); }
+.fixture-card-row.live {
+  border-color: rgba(34, 197, 94, 0.4);
+  box-shadow: 0 0 12px rgba(34, 197, 94, 0.08);
+}
+.fixture-card-row.finished { opacity: 0.7; }
+.fixture-teams-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  gap: 1.5rem;
+}
+.fixture-team-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+}
+.fixture-team-wrapper.home { justify-content: flex-end; }
+.fixture-team-wrapper.away { justify-content: flex-start; }
+.fixture-team-name {
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+  color: var(--text-main);
+}
+.fixture-logo {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+.fixture-score-area {
+  text-align: center;
+  min-width: 80px;
+  flex-shrink: 0;
+}
+.fixture-score {
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: var(--text-main);
+}
+.fixture-time {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+.fixture-time strong { font-size: 0.85rem; color: var(--text-main); }
+.fixture-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 3px 12px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.fixture-badge.live {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+.fixture-badge.ft, .fixture-badge.finished {
+  background: var(--border);
+  color: var(--text-muted);
+}
+.fixture-badge.upcoming {
+  background: rgba(56, 189, 248, 0.1);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.2);
+}
+.live-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  animation: livePulse 1.5s infinite;
+}
+@keyframes livePulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5); }
+  50% { opacity: 0.6; box-shadow: 0 0 0 5px rgba(34, 197, 94, 0); }
+}
 .tech-details h3 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-faint); margin-bottom: 0.5rem; margin-top: 1rem; }
 .tech-details p { margin-bottom: 0.25rem; }
 
 /* News Panel */
 .news-feed { display: flex; flex-direction: column; gap: 1rem; }
-.news-item { font-size: 0.85rem; color: var(--text-muted); line-height: 1.4; border-left: 2px solid var(--border); padding-left: 10px; }
+.news-item { font-size: 0.85rem; color: var(--text-muted); line-height: 1.4; border-left: 2px solid var(--border); padding: 10px; transition: background-color 0.2s; border-radius: 4px; }
+.news-item:hover { background-color: var(--border); border-left-color: #38bdf8; }
 .news-item strong { color: var(--text-main); display: block; margin-bottom: 0.2rem; }
 
 /* Status Board */
@@ -323,12 +449,25 @@ body {
 .text-yellow { color: #fbbf24; }
 .text-gray { color: #9ca3af; }
 
-.injury-info { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.injury-info { display: flex; flex-direction: column; gap: 4px; flex: 1; }
 .injury-name { font-weight: 600; }
 .injury-name:not([class*="text-"]) { color: var(--text-main); }
 .injury-team { color: var(--text-faint); font-weight: normal; font-size: 0.75rem; }
-.injury-status { color: var(--text-muted); font-size: 0.75rem; }
-.injury-return { color: var(--text-main); opacity: 0.8; }
+.injury-status-row { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.status-pill {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: 12px;
+  display: inline-block;
+}
+.pill-red { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
+.pill-darkred { background: rgba(185, 28, 28, 0.15); color: #ef4444; border: 1px solid rgba(185, 28, 28, 0.3); }
+.pill-yellow { background: rgba(234, 179, 8, 0.15); color: #eab308; border: 1px solid rgba(234, 179, 8, 0.3); }
+.pill-gray { background: rgba(156, 163, 175, 0.15); color: #9ca3af; border: 1px solid rgba(156, 163, 175, 0.3); }
+.injury-return { color: var(--text-muted); font-size: 0.75rem; }
 
 /* AI Summary */
 .ai-summary-text { font-size: 0.9rem; color: var(--text-muted); line-height: 1.6; }

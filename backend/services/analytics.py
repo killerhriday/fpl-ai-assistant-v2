@@ -100,22 +100,33 @@ def get_best_transfers(
     
     return suggested_starters, suggested_bench, transfers
 
-def format_player(p: Dict) -> PlayerSchema:
-    photo_id = str(p.get('photo', '')).replace('.jpg', '').replace('.png', '')
-    club = "Club " + str(p.get('team', '?'))
+def format_player(p: Dict, teams_map: Dict = None) -> PlayerSchema:
+    # Use the player's 'code' field for the photo URL — this is the correct
+    # FPL API key for Premier League player headshots. The 'photo' field
+    # sometimes has mismatched IDs that return 404s.
+    player_code = p.get('code', '')
+    photo_url = f"https://resources.premierleague.com/premierleague/photos/players/250x250/p{player_code}.png"
+    
+    # Look up real team short name (e.g. "ARS", "MUN") from the teams map
+    team_id = p.get('team', 0)
+    if teams_map and team_id in teams_map:
+        club = teams_map[team_id]
+    else:
+        club = str(team_id)
+    
     pos_map = {1: "GK", 2: "DEF", 3: "MID", 4: "FWD"}
     pos_id = p.get('element_type', 0)
     return PlayerSchema(
         id=p.get('id', 0),
         name=p.get('web_name', 'Unknown'),
-        team=p.get('team', 0),
+        team=team_id,
         club=club,
         position=pos_map.get(pos_id, "UNK"),
         position_id=pos_id,
         price=p.get('now_cost', 50) / 10.0,
         ep_next=float(p.get('ep_next', 0) or 0),
         is_new=p.get('is_new', False),
-        photo_url=f"https://resources.premierleague.com/premierleague/photos/players/250x250/p{photo_id}.png"
+        photo_url=photo_url
     )
 
 def calculate_budget_metrics(squad: List[Dict], in_the_bank: float) -> BudgetStatus:
@@ -179,8 +190,8 @@ def get_global_injuries(fpl_data: Dict) -> List[InjuryAlert]:
                 
             team_name = teams_map.get(p.get('team'), 'UNK')
             
-            photo_id = str(p.get('photo', '')).replace('.jpg', '').replace('.png', '')
-            photo_url = f"https://resources.premierleague.com/premierleague/photos/players/250x250/p{photo_id}.png"
+            player_code = p.get('code', '')
+            photo_url = f"https://resources.premierleague.com/premierleague/photos/players/250x250/p{player_code}.png"
             
             alerts.append(InjuryAlert(
                 player_name=p.get('web_name', ''),
@@ -231,3 +242,112 @@ def generate_ai_summary(transfers: List[TransferCard], budget: BudgetStatus, inj
         summary += f"Taking a -{total_hit} point hit is justified here given the strong projected upside of the incoming players over the next 4 gameweeks."
         
     return summary
+
+def generate_fpl_news(fpl_data: Dict) -> List[Dict[str, str]]:
+    """Generate dynamic news based on actual FPL data trends."""
+    news = []
+    players = fpl_data.get('elements', [])
+    teams = {t['id']: t['short_name'] for t in fpl_data.get('teams', [])}
+    
+    if not players:
+        return news
+        
+    # 1. Most Transferred In
+    players_sorted_in = sorted(players, key=lambda x: x.get('transfers_in_event', 0), reverse=True)
+    top_in = players_sorted_in[0]
+    news.append({
+        "source": "FPL Market Watch",
+        "headline": f"{top_in['web_name']} is the most transferred in player!",
+        "summary": f"{top_in['web_name']} ({teams.get(top_in['team'], '')}) has been brought in by {top_in.get('transfers_in_event', 0):,} managers this Gameweek after strong recent performances.",
+        "url": "https://fantasy.premierleague.com/statistics"
+    })
+    
+    # 2. Most Transferred Out
+    players_sorted_out = sorted(players, key=lambda x: x.get('transfers_out_event', 0), reverse=True)
+    top_out = players_sorted_out[0]
+    news.append({
+        "source": "FPL Market Watch",
+        "headline": f"Managers dropping {top_out['web_name']} in droves",
+        "summary": f"{top_out.get('transfers_out_event', 0):,} managers have sold {top_out['web_name']} ({teams.get(top_out['team'], '')}) ahead of the deadline. Is it time to sell?",
+        "url": "https://fantasy.premierleague.com/statistics"
+    })
+    
+    # 3. Form Players
+    try:
+        players_form = sorted([p for p in players if float(p.get('form', 0)) > 0], key=lambda x: float(x.get('form', 0)), reverse=True)
+        if len(players_form) >= 3:
+            form_players = ", ".join([f"{p['web_name']} ({p.get('form')} form)" for p in players_form[:3]])
+            news.append({
+                "source": "Form Guide",
+                "headline": "Top in-form players to target",
+                "summary": f"The most in-form players right now are {form_players}. Consider bringing them in to ride the momentum.",
+                "url": "https://fantasy.premierleague.com/statistics"
+            })
+    except (ValueError, TypeError):
+        pass
+        
+    # 4. Price Risers
+    risers = [p for p in players if p.get('cost_change_event', 0) > 0]
+    if risers:
+        risers_sorted = sorted(risers, key=lambda x: x.get('cost_change_event', 0), reverse=True)
+        riser_names = ", ".join([p['web_name'] for p in risers_sorted[:3]])
+        news.append({
+            "source": "Price Changes",
+            "headline": f"Price rises for {riser_names}",
+            "summary": f"Several players have increased in price overnight due to high transfer volume, including {riser_names}.",
+            "url": "https://fantasy.premierleague.com/statistics"
+        })
+        
+    # 5. Price Fallers
+    fallers = [p for p in players if p.get('cost_change_event', 0) < 0]
+    if fallers:
+        fallers_sorted = sorted(fallers, key=lambda x: x.get('cost_change_event', 0))
+        faller_names = ", ".join([p['web_name'] for p in fallers_sorted[:3]])
+        news.append({
+            "source": "Price Changes",
+            "headline": f"Price drops for {faller_names}",
+            "summary": f"Market forces have caused price drops for {faller_names}. Check your squad value.",
+            "url": "https://fantasy.premierleague.com/statistics"
+        })
+        
+    # 6. Differential Picks
+    try:
+        differentials = sorted([p for p in players if float(p.get('selected_by_percent', 0)) < 5.0 and float(p.get('form', 0)) > 3.0], key=lambda x: float(x.get('form', 0)), reverse=True)
+        if differentials:
+            diff_names = ", ".join([f"{p['web_name']} ({p.get('selected_by_percent')}%)" for p in differentials[:3]])
+            news.append({
+                "source": "Differential Scout",
+                "headline": "Under the radar picks delivering points",
+                "summary": f"Looking for a differential to climb your mini-league? {diff_names} are highly in-form but owned by less than 5% of managers.",
+                "url": "https://fantasy.premierleague.com/statistics"
+            })
+    except (ValueError, TypeError):
+        pass
+        
+    # 7. Heavily Selected
+    try:
+        selected = sorted(players, key=lambda x: float(x.get('selected_by_percent', 0)), reverse=True)
+        top_sel = selected[0]
+        news.append({
+            "source": "Ownership Stats",
+            "headline": f"{top_sel['web_name']} remains highest owned player",
+            "summary": f"A staggering {top_sel.get('selected_by_percent', 0)}% of FPL managers own {top_sel['web_name']}. Not owning him could be a huge risk.",
+            "url": "https://fantasy.premierleague.com/statistics"
+        })
+    except (ValueError, TypeError):
+        pass
+        
+    # 8. Highest Expected Points
+    try:
+        ep = sorted(players, key=lambda x: float(x.get('ep_next', 0)), reverse=True)
+        top_ep = ep[0]
+        news.append({
+            "source": "Algorithm Predictions",
+            "headline": f"Captaincy favorite: {top_ep['web_name']}",
+            "summary": f"{top_ep['web_name']} has the highest projected score for the upcoming Gameweek ({top_ep.get('ep_next')} pts). Make sure he is in your team.",
+            "url": "https://fantasy.premierleague.com/statistics"
+        })
+    except (ValueError, TypeError):
+        pass
+
+    return news

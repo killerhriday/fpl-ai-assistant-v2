@@ -12,7 +12,7 @@ import uvicorn
 import requests
 from models import ProcessResponse, PrivacyStatus
 from services.ocr import ocr_service
-from services.analytics import get_best_transfers, format_player, calculate_budget_metrics, get_global_injuries, generate_ai_summary
+from services.analytics import get_best_transfers, format_player, calculate_budget_metrics, get_global_injuries, generate_ai_summary, generate_fpl_news
 
 app = FastAPI()
 
@@ -36,7 +36,7 @@ def get_fpl_data():
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
             }
             r = requests.get('https://fantasy.premierleague.com/api/bootstrap-static/', headers=headers, timeout=5)
-            r2 = requests.get('https://fantasy.premierleague.com/api/fixtures/?future=1', headers=headers, timeout=5)
+            r2 = requests.get('https://fantasy.premierleague.com/api/fixtures/', headers=headers, timeout=5)
             fpl_cache["data"] = r.json()
             fpl_cache["fixtures"] = r2.json() if r2.ok else []
             fpl_cache["timestamp"] = time.time()
@@ -57,13 +57,15 @@ def process_job(request_id: str, image_bytes: bytes, transfers: int, strategy: s
         job.message = "Identifying players from your screenshot."
         ocr_start = time.time()
         
-        extracted_texts, detected_powerups = ocr_service.process_image(image_bytes)
+        # ── NEW: Spatial OCR extraction ──
+        # Returns candidate items with XY coordinates + detected powerups
+        candidate_items, detected_powerups = ocr_service.process_image(image_bytes)
         
         job.performance['ocr_ms'] = (time.time() - ocr_start) * 1000
         
-        # Stage 4: Matching
+        # Stage 4: Matching with spatial row analysis
         job.stage = "Matching players with FPL data"
-        job.message = "Comparing detected names with the current FPL player list."
+        job.message = "Analyzing pitch layout to detect formation and player positions."
         
         fpl_start = time.time()
         fpl_data, fpl_fixtures = get_fpl_data()
@@ -74,41 +76,50 @@ def process_job(request_id: str, image_bytes: bytes, transfers: int, strategy: s
         
         analysis_start = time.time()
         
-        matched_players = ocr_service.match_players(extracted_texts, players)
+        # ── NEW: Spatial matching — positions come from WHERE players
+        # appear on the pitch image, NOT from the FPL database ──
+        spatial_result = ocr_service.match_players_spatial(candidate_items, players)
+        
+        starters = spatial_result['starters']      # 11 players with correct positions
+        bench = spatial_result['bench']             # 4 bench players
+        formation = spatial_result['formation']     # e.g. "3-4-3"
+        row_counts = spatial_result['row_counts']   # e.g. [1, 3, 4, 3]
+        
+        # Store formation on the job response
+        job.formation = formation
         
         job.ocr_summary = {
-            "players_detected": len(extracted_texts),
-            "players_matched": len(matched_players),
+            "players_detected": len(candidate_items),
+            "players_matched": len(starters) + len(bench),
             "average_confidence": 0.85,
             "powerups_detected": detected_powerups,
-            "needs_review": len(matched_players) < 11
+            "formation_detected": formation,
+            "row_counts": row_counts,
+            "needs_review": len(starters) < 11
         }
         
-        # Stage 6: Reconstructing squad
+        # Stage 6: Reconstructing squad — positions already set by spatial analysis
         job.stage = "Checking squad constraints"
-        job.message = "Reconstructing your squad and checking FPL rules."
-        
-        # We rely on the top-to-bottom order from the OCR engine.
-        # The first 11 players found on the screen are the starting XI.
-        # The remaining players found at the bottom are the bench.
-        starters = matched_players[:11]
-        bench = matched_players[11:15]
+        job.message = f"Formation detected: {formation}. Verifying squad rules."
                 
         # Stage 7 & 8: Recommendations
         job.stage = "Ranking transfer candidates"
         job.message = "Testing transfer options for your team."
         
-        used_ids = set([p['id'] for p in matched_players])
+        used_ids = set([p['id'] for p in starters + bench])
         sug_starters, sug_bench, t_cards = get_best_transfers(starters, bench, players, used_ids, transfers, strategy)
         
+        # Build teams lookup for club short names (e.g. 1 → "ARS", 16 → "MUN")
+        teams_map = {t['id']: t['short_name'] for t in teams}
+        
         job.original_team = {
-            "starters": [format_player(p) for p in starters],
-            "bench": [format_player(p) for p in bench]
+            "starters": [format_player(p, teams_map) for p in starters],
+            "bench": [format_player(p, teams_map) for p in bench]
         }
         
         job.suggested_team = {
-            "starters": [format_player(p) for p in sug_starters],
-            "bench": [format_player(p) for p in sug_bench]
+            "starters": [format_player(p, teams_map) for p in sug_starters],
+            "bench": [format_player(p, teams_map) for p in sug_bench]
         }
         
         job.transfers = t_cards
@@ -142,10 +153,64 @@ def process_job(request_id: str, image_bytes: bytes, transfers: int, strategy: s
                         
         job.fixtures = fixtures_to_show
         
+        # ── Build Gameweek Fixtures board (live scores + upcoming) ──
+        gameweek_fixtures = []
+        if fpl_fixtures:
+            # Find the current or next gameweek
+            current_event = next((e for e in fpl_data['events'] if e.get('is_current')), None)
+            next_event = next((e for e in fpl_data['events'] if e.get('is_next')), None)
+            
+            # Prefer current (for live scores), fall back to next
+            target_event = current_event or next_event
+            
+            if target_event:
+                gw_id = target_event['id']
+                gw_fixtures = [f for f in fpl_fixtures if f.get('event') == gw_id]
+                team_full = {t['id']: t for t in teams}
+                
+                for fix in gw_fixtures:
+                    home_team = team_full.get(fix['team_h'], {})
+                    away_team = team_full.get(fix['team_a'], {})
+                    
+                    home_name = home_team.get('name', '?')
+                    away_name = away_team.get('name', '?')
+                    
+                    home_logo = f"https://resources.premierleague.com/premierleague/badges/t{home_team.get('code', '')}.png"
+                    away_logo = f"https://resources.premierleague.com/premierleague/badges/t{away_team.get('code', '')}.png"
+                    
+                    # Determine match status
+                    started = fix.get('started', False)
+                    finished = fix.get('finished', False) or fix.get('finished_provisional', False)
+                    
+                    if finished:
+                        status = 'FT'
+                    elif started:
+                        status = 'LIVE'
+                    else:
+                        status = 'upcoming'
+                    
+                    gameweek_fixtures.append({
+                        'home_team': home_name,
+                        'away_team': away_name,
+                        'home_logo': home_logo,
+                        'away_logo': away_logo,
+                        'home_score': fix.get('team_h_score'),
+                        'away_score': fix.get('team_a_score'),
+                        'kickoff_time': fix.get('kickoff_time', ''),
+                        'status': status,
+                    })
+                
+                # Sort: LIVE first, then upcoming (by kickoff), then FT
+                status_order = {'LIVE': 0, 'upcoming': 1, 'FT': 2}
+                gameweek_fixtures.sort(key=lambda x: (status_order.get(x['status'], 1), x['kickoff_time']))
+        
+        job.gameweek_fixtures = gameweek_fixtures
+        
         # Calculate new dashboard metrics
         job.budget = calculate_budget_metrics(starters + bench, bank_balance)
         job.global_injuries = get_global_injuries(fpl_data)
         job.ai_summary = generate_ai_summary(t_cards, job.budget, job.global_injuries, starters + bench)
+        job.news = generate_fpl_news(fpl_data)
         
         age = time.time() - fpl_cache["timestamp"]
         job.data_freshness = {

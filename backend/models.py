@@ -67,12 +67,15 @@ class ProcessResponse(BaseModel):
     transfers: Optional[List[TransferCard]] = None
     fixtures: Optional[List[Dict[str, Any]]] = None
     ocr_summary: Optional[Dict[str, Any]] = None
+    formation: Optional[str] = None
+    gameweek_fixtures: Optional[List[Dict[str, Any]]] = None
     
     # New Dashboard Metrics
     budget: Optional[BudgetStatus] = None
     global_injuries: Optional[List[InjuryAlert]] = None
     data_freshness: Optional[DataFreshness] = None
     ai_summary: Optional[str] = None
+    news: Optional[List[Dict[str, str]]] = None
     
     performance: Dict[str, float] = {}
     privacy: PrivacyStatus = PrivacyStatus()

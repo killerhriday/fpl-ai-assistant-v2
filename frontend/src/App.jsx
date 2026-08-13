@@ -11,11 +11,7 @@ const STAGES = [
   { id: 'Deleting temporary data', title: 'Delete temporary data' }
 ];
 
-const MOCK_NEWS = [
-  { source: 'BBC Sport', headline: 'Haaland continues scoring streak', summary: 'Erling Haaland netted a hat-trick against Fulham to solidify his golden boot campaign.' },
-  { source: 'The Guardian', headline: 'Saka injury update', summary: 'Mikel Arteta confirms Bukayo Saka will face a late fitness test before the weekend clash.' },
-  { source: 'Sky Sports', headline: 'Double gameweek confirmed', summary: 'Chelsea and Spurs will play twice in GW34 following the latest fixture reshuffle.' }
-];
+
 
 function Timeline({ stage, status, dataFreshness }) {
   const activeIndex = STAGES.findIndex(s => s.id === stage);
@@ -79,10 +75,11 @@ function PitchPlayer({ player }) {
   )
 }
 
-function Pitch({ starters, bench, title }) {
+function Pitch({ starters, bench, title, formation }) {
   if (!starters || starters.length === 0) return <div className="pitch-container empty"></div>
   return (
     <div className="pitch-container">
+      {formation && <div className="formation-badge">{formation}</div>}
       <div className="position-row">{starters.filter(p => p.position_id === 4).map(p => <PitchPlayer key={p.id} player={p} />)}</div>
       <div className="position-row">{starters.filter(p => p.position_id === 3).map(p => <PitchPlayer key={p.id} player={p} />)}</div>
       <div className="position-row">{starters.filter(p => p.position_id === 2).map(p => <PitchPlayer key={p.id} player={p} />)}</div>
@@ -244,7 +241,12 @@ function App() {
               <p className="loading-text">Loading...</p>
             ) : (
               <div className="squad-summary">
-                <div className="formation">11/11 starters detected</div>
+                <div className="formation">
+                  {jobData.formation ? `Formation: ${jobData.formation}` : '11/11 starters detected'}
+                  <span style={{ marginLeft: '0.5rem', fontSize: '0.75rem', opacity: 0.7 }}>
+                    ({jobData.original_team.starters.length} starters, {jobData.original_team.bench.length} bench)
+                  </span>
+                </div>
                 {jobData.original_team.starters.map(p => (
                   <div key={p.id} className="squad-player-row">
                     <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -287,12 +289,18 @@ function App() {
             <div className="panel">
               <h2 className="panel-header">Latest FPL News</h2>
               <div className="news-feed">
-                {MOCK_NEWS.map((item, idx) => (
-                  <div key={idx} className="news-item">
-                    <strong>{item.source}: {item.headline}</strong>
-                    {item.summary}
-                  </div>
-                ))}
+                {jobData.news && jobData.news.length > 0 ? (
+                  jobData.news.map((item, idx) => (
+                    <a key={idx} href={item.url} target="_blank" rel="noopener noreferrer" className="news-item" style={{ textDecoration: 'none', display: 'block' }}>
+                      <strong>
+                        <span style={{ color: '#38bdf8' }}>{item.source}</span>: {item.headline}
+                      </strong>
+                      <span>{item.summary}</span>
+                    </a>
+                  ))
+                ) : (
+                  <p className="empty-text">No news available at this time.</p>
+                )}
               </div>
             </div>
           )}
@@ -396,14 +404,14 @@ function App() {
                   <div className="pitch-comparison-section" style={{ display: 'flex', justifyContent: 'center' }}>
                     <div className="pitch-col" style={{ maxWidth: '500px', flex: 'none', width: '100%' }}>
                       <h3>Your Optimal Squad</h3>
-                      <Pitch starters={jobData.original_team.starters} bench={jobData.original_team.bench} />
+                      <Pitch starters={jobData.original_team.starters} bench={jobData.original_team.bench} formation={jobData.formation} />
                     </div>
                   </div>
                 ) : (
                   <div className="pitch-comparison-section">
                     <div className="pitch-col">
                       <h3>Original Team</h3>
-                      <Pitch starters={jobData.original_team.starters} bench={jobData.original_team.bench} />
+                      <Pitch starters={jobData.original_team.starters} bench={jobData.original_team.bench} formation={jobData.formation} />
                     </div>
                     <div className="pitch-col">
                       <h3>AI Suggested Team</h3>
@@ -429,10 +437,52 @@ function App() {
                           <strong>Reason:</strong> {t.reasons.join(', ')}
                         </div>
                       </div>
-                    ))}
+                ))}
                   </div>
                 )}
               </div>
+
+              {/* Gameweek Fixtures Board */}
+              {jobData.gameweek_fixtures && jobData.gameweek_fixtures.length > 0 && (
+                <div className="panel fixtures-board">
+                  <h2 className="panel-header">Gameweek Fixtures</h2>
+                  <div className="fixtures-list-col">
+                    {jobData.gameweek_fixtures.map((fix, idx) => (
+                      <div key={idx} className={`fixture-card-row ${fix.status === 'LIVE' ? 'live' : fix.status === 'FT' ? 'finished' : ''}`}>
+                        <div className="fixture-teams-row">
+                          <div className="fixture-team-wrapper home">
+                            <span className="fixture-team-name">{fix.home_team}</span>
+                            {fix.home_logo && <img src={fix.home_logo} alt={fix.home_team} className="fixture-logo" />}
+                          </div>
+                          
+                          <div className="fixture-score-area">
+                            {fix.status === 'upcoming' ? (
+                              <span className="fixture-time">
+                                {fix.kickoff_time ? new Date(fix.kickoff_time).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) : 'TBD'}
+                                <br />
+                                <strong>{fix.kickoff_time ? new Date(fix.kickoff_time).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : ''}</strong>
+                              </span>
+                            ) : (
+                              <span className="fixture-score">
+                                {fix.home_score ?? 0} - {fix.away_score ?? 0}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="fixture-team-wrapper away">
+                            {fix.away_logo && <img src={fix.away_logo} alt={fix.away_team} className="fixture-logo" />}
+                            <span className="fixture-team-name">{fix.away_team}</span>
+                          </div>
+                        </div>
+                        <div className={`fixture-badge ${fix.status.toLowerCase()}`}>
+                          {fix.status === 'LIVE' && <span className="live-dot"></span>}
+                          {fix.status === 'LIVE' ? 'LIVE' : fix.status === 'FT' ? 'Full Time' : 'Upcoming'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>
@@ -464,10 +514,10 @@ function App() {
                     </div>
                     <div className="injury-info">
                       <span className={`injury-name text-${inj.color}`}>{inj.player_name} <span className="injury-team">({inj.team_name})</span></span>
-                      <span className="injury-status">
-                        {inj.status} 
-                        {inj.return_date && <span className="injury-return"> • Back: {inj.return_date}</span>}
-                      </span>
+                      <div className="injury-status-row">
+                        <span className={`status-pill pill-${inj.color}`}>{inj.status}</span>
+                        {inj.return_date && <span className="injury-return">Back: {inj.return_date}</span>}
+                      </div>
                     </div>
                   </div>
                 ))}
