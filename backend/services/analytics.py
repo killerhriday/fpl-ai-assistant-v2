@@ -24,6 +24,45 @@ def score_player(player: Dict, strategy: str = "next_gameweek") -> float:
         
     return score
 
+def get_optimal_11(squad: List[Dict], strategy: str) -> Tuple[List[Dict], List[Dict]]:
+    gks = [p for p in squad if p['element_type'] == 1]
+    defs = [p for p in squad if p['element_type'] == 2]
+    mids = [p for p in squad if p['element_type'] == 3]
+    fwds = [p for p in squad if p['element_type'] == 4]
+    
+    gks.sort(key=lambda x: score_player(x, strategy), reverse=True)
+    defs.sort(key=lambda x: score_player(x, strategy), reverse=True)
+    mids.sort(key=lambda x: score_player(x, strategy), reverse=True)
+    fwds.sort(key=lambda x: score_player(x, strategy), reverse=True)
+    
+    starters = []
+    # Mandatory minimums
+    starters.extend(gks[:1])
+    starters.extend(defs[:3])
+    starters.extend(mids[:2])
+    starters.extend(fwds[:1])
+    
+    # Pool remaining
+    pool = defs[3:] + mids[2:] + fwds[1:]
+    pool.sort(key=lambda x: score_player(x, strategy), reverse=True)
+    
+    # Fill remaining 4 spots
+    starters.extend(pool[:4])
+    
+    # Ensure correct positional ordering for UI (GK, DEF, MID, FWD)
+    starters.sort(key=lambda x: x['element_type'])
+    
+    starter_ids = {p['id'] for p in starters}
+    bench = [p for p in squad if p['id'] not in starter_ids]
+    
+    # Sort bench (GK first, then by score)
+    bench_gk = [p for p in bench if p['element_type'] == 1]
+    bench_out = [p for p in bench if p['element_type'] != 1]
+    bench_out.sort(key=lambda x: score_player(x, strategy), reverse=True)
+    bench = bench_gk + bench_out
+    
+    return starters, bench
+
 def get_best_transfers(
     starters: List[Dict], 
     bench: List[Dict], 
@@ -33,72 +72,91 @@ def get_best_transfers(
     strategy: str
 ) -> Tuple[List[Dict], List[Dict], List[TransferCard]]:
     
+    squad = starters + bench
+    for p in squad:
+        p['is_new'] = False
+        
     if free_transfers <= 0 and strategy != "four_gameweek_planner":
         return starters, bench, []
         
-    if not starters:
+    if len(squad) != 15:
         return starters, bench, []
         
-    # Find weakest starter
-    worst_starter = min(starters, key=lambda x: score_player(x, strategy))
-    worst_pos = worst_starter['element_type']
+    current_starters, current_bench = get_optimal_11(squad, strategy)
+    current_score = sum(score_player(p, strategy) for p in current_starters)
     
     best_replacement = None
-    best_score = score_player(worst_starter, strategy)
+    best_out = None
+    best_score = current_score
+    best_starters = current_starters
+    best_bench = current_bench
     
-    # Simple affordability constraint (assume we can afford +1.0)
-    max_price = worst_starter.get('now_cost', 50) + 10 
+    gain_threshold = 4 if free_transfers == 0 else 1
     
-    for p in all_players:
-        if p['id'] not in used_ids and p['element_type'] == worst_pos:
-            if p.get('now_cost', 50) <= max_price:
-                score = score_player(p, strategy)
-                if score > best_score:
-                    best_score = score
-                    best_replacement = p
+    for out_p in squad:
+        out_pos = out_p['element_type']
+        max_price = out_p.get('now_cost', 50) + 10 
+        
+        for in_p in all_players:
+            if in_p['id'] not in used_ids and in_p['element_type'] == out_pos:
+                if in_p.get('now_cost', 50) <= max_price:
+                    # Quick filter
+                    if score_player(in_p, strategy) <= score_player(out_p, strategy):
+                        continue
+                        
+                    hypo_squad = [p for p in squad if p['id'] != out_p['id']]
+                    hypo_in = in_p.copy()
+                    hypo_in['is_new'] = True
+                    hypo_squad.append(hypo_in)
                     
+                    new_starters, new_bench = get_optimal_11(hypo_squad, strategy)
+                    new_score = sum(score_player(p, strategy) for p in new_starters)
+                    
+                    if new_score - current_score > gain_threshold and new_score > best_score:
+                        best_score = new_score
+                        best_replacement = hypo_in
+                        best_out = out_p
+                        best_starters = new_starters
+                        best_bench = new_bench
+                        
     transfers = []
-    suggested_starters = []
     
-    if best_replacement and (best_score - score_player(worst_starter, strategy) > (4 if free_transfers == 0 else 1)):
-        # We recommend the transfer
-        for p in starters:
-            if p['id'] == worst_starter['id']:
-                best_replacement['is_new'] = True
-                suggested_starters.append(best_replacement)
-                
-                # Build TransferCard
-                tc = TransferCard(
-                    out_player_id=worst_starter['id'],
-                    in_player_id=best_replacement['id'],
-                    out_player_name=worst_starter['web_name'],
-                    in_player_name=best_replacement['web_name'],
-                    position_id=worst_pos,
-                    club_in=str(best_replacement.get('team', 0)),
-                    club_out=str(worst_starter.get('team', 0)),
-                    current_price=worst_starter.get('now_cost', 50) / 10,
-                    new_price=best_replacement.get('now_cost', 50) / 10,
-                    ep_next_in=float(best_replacement.get('ep_next', 0) or 0),
-                    ep_next_out=float(worst_starter.get('ep_next', 0) or 0),
-                    projected_gain_1gw=float(best_replacement.get('ep_next', 0) or 0) - float(worst_starter.get('ep_next', 0) or 0),
-                    hit_cost=0 if free_transfers > 0 else 4,
-                    confidence=0.85,
-                    reasons=["Higher projected points", "Better overall value"],
-                    warnings=[],
-                    score_breakdown={"projection": 0.5, "form": 0.3, "value": 0.2}
-                )
-                transfers.append(tc)
-            else:
-                p['is_new'] = False
-                suggested_starters.append(p)
-    else:
-        suggested_starters = [p.copy() for p in starters]
-        for p in suggested_starters: p['is_new'] = False
-
-    suggested_bench = [p.copy() for p in bench]
-    for p in suggested_bench: p['is_new'] = False
-    
-    return suggested_starters, suggested_bench, transfers
+    if best_replacement:
+        reasons = ["Higher projected points", "Better overall value"]
+        
+        # Check if formation changed
+        old_def = len([p for p in current_starters if p['element_type'] == 2])
+        old_mid = len([p for p in current_starters if p['element_type'] == 3])
+        old_fwd = len([p for p in current_starters if p['element_type'] == 4])
+        new_def = len([p for p in best_starters if p['element_type'] == 2])
+        new_mid = len([p for p in best_starters if p['element_type'] == 3])
+        new_fwd = len([p for p in best_starters if p['element_type'] == 4])
+        
+        if (old_def, old_mid, old_fwd) != (new_def, new_mid, new_fwd):
+            reasons.append(f"Allows optimal formation change from {old_def}-{old_mid}-{old_fwd} to {new_def}-{new_mid}-{new_fwd}")
+            
+        tc = TransferCard(
+            out_player_id=best_out['id'],
+            in_player_id=best_replacement['id'],
+            out_player_name=best_out['web_name'],
+            in_player_name=best_replacement['web_name'],
+            position_id=best_out['element_type'],
+            club_in=str(best_replacement.get('team', 0)),
+            club_out=str(best_out.get('team', 0)),
+            current_price=best_out.get('now_cost', 50) / 10,
+            new_price=best_replacement.get('now_cost', 50) / 10,
+            ep_next_in=float(best_replacement.get('ep_next', 0) or 0),
+            ep_next_out=float(best_out.get('ep_next', 0) or 0),
+            projected_gain_1gw=best_score - current_score,
+            hit_cost=0 if free_transfers > 0 else 4,
+            confidence=0.85,
+            reasons=reasons,
+            warnings=[],
+            score_breakdown={"projection": 0.5, "form": 0.3, "value": 0.2}
+        )
+        transfers.append(tc)
+        
+    return best_starters, best_bench, transfers
 
 def format_player(p: Dict, teams_map: Dict = None) -> PlayerSchema:
     # Use the player's 'code' field for the photo URL — this is the correct
