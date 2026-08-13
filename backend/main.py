@@ -130,7 +130,7 @@ def process_job(request_id: str, image_bytes: bytes, transfers: int, strategy: s
         job.message = "Testing transfer options for your team."
         
         used_ids = set([p['id'] for p in starters + bench])
-        sug_starters, sug_bench, t_cards = get_best_transfers(starters, bench, players, used_ids, transfers, strategy)
+        sug_starters, sug_bench, t_cards = get_best_transfers(starters, bench, players, used_ids, transfers, strategy, bank_balance)
         
         # Build teams lookup for club short names (e.g. 1 → "ARS", 16 → "MUN")
         teams_map = {t['id']: t['short_name'] for t in teams}

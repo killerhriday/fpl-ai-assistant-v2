@@ -69,7 +69,8 @@ def get_best_transfers(
     all_players: List[Dict], 
     used_ids: set, 
     free_transfers: int, 
-    strategy: str
+    strategy: str,
+    bank_balance: float
 ) -> Tuple[List[Dict], List[Dict], List[TransferCard]]:
     
     squad = starters + bench
@@ -95,7 +96,7 @@ def get_best_transfers(
     
     for out_p in squad:
         out_pos = out_p['element_type']
-        max_price = out_p.get('now_cost', 50) + 10 
+        max_price = out_p.get('now_cost', 50) + int(bank_balance * 10)
         
         for in_p in all_players:
             if in_p['id'] not in used_ids and in_p['element_type'] == out_pos:
