@@ -134,15 +134,25 @@ def process_job(request_id: str, image_bytes: bytes, transfers: int, strategy: s
         
         # Build teams lookup for club short names (e.g. 1 → "ARS", 16 → "MUN")
         teams_map = {t['id']: t['short_name'] for t in teams}
+        teams_map_code = {t['id']: t['code'] for t in teams}
         
+        # Fallback: assign original squad captain/vice based on projected points
+        cap_candidates = sorted(starters, key=lambda x: float(x.get('ep_next', 0) or 0), reverse=True)
+        if len(cap_candidates) >= 2:
+            for p in starters + bench:
+                p['is_captain'] = False
+                p['is_vice_captain'] = False
+            cap_candidates[0]['is_captain'] = True
+            cap_candidates[1]['is_vice_captain'] = True
+
         job.original_team = {
-            "starters": [format_player(p, teams_map) for p in starters],
-            "bench": [format_player(p, teams_map) for p in bench]
+            "starters": [format_player(p, teams_map, teams_map_code) for p in starters],
+            "bench": [format_player(p, teams_map, teams_map_code) for p in bench]
         }
         
         job.suggested_team = {
-            "starters": [format_player(p, teams_map) for p in sug_starters],
-            "bench": [format_player(p, teams_map) for p in sug_bench]
+            "starters": [format_player(p, teams_map, teams_map_code, True) for p in sug_starters],
+            "bench": [format_player(p, teams_map, teams_map_code, True) for p in sug_bench]
         }
         
         job.transfers = t_cards
@@ -232,7 +242,7 @@ def process_job(request_id: str, image_bytes: bytes, transfers: int, strategy: s
         # Calculate new dashboard metrics
         job.budget = calculate_budget_metrics(starters + bench, bank_balance)
         job.global_injuries = get_global_injuries(fpl_data)
-        job.ai_summary = generate_ai_summary(t_cards, job.budget, job.global_injuries, starters + bench)
+        job.ai_summary = generate_ai_summary(t_cards, job.budget, job.global_injuries, starters + bench, transfers)
         job.news = generate_fpl_news(fpl_data)
         
         age = time.time() - fpl_cache["timestamp"]
@@ -301,16 +311,55 @@ async def get_team_status(request_id: str):
 @app.get("/api/metadata")
 async def get_metadata():
     try:
-        fpl_data, _ = get_fpl_data()
-        current_event = next((e for e in fpl_data['events'] if e['is_next']), None)
-        if current_event:
+        fpl_data, fpl_fixtures = get_fpl_data()
+        current_event = next((e for e in fpl_data['events'] if e.get('is_current')), None)
+        next_event = next((e for e in fpl_data['events'] if e.get('is_next')), None)
+        target_event = current_event or next_event
+        
+        fdr_table = []
+        if fpl_fixtures and target_event:
+            start_gw = target_event['id']
+            teams = fpl_data['teams']
+            team_dict = {t['id']: t for t in teams}
+            
+            for t in teams:
+                team_id = t['id']
+                team_fixtures = []
+                
+                # Get next 5 matches
+                upcoming = [f for f in fpl_fixtures if f.get('event') and f['event'] >= start_gw and (f['team_h'] == team_id or f['team_a'] == team_id)]
+                upcoming.sort(key=lambda x: x['event'])
+                
+                for f in upcoming[:5]:
+                    is_home = (f['team_h'] == team_id)
+                    opp_id = f['team_a'] if is_home else f['team_h']
+                    opp_name = team_dict.get(opp_id, {}).get('short_name', 'UNK')
+                    diff = f['team_h_difficulty'] if is_home else f['team_a_difficulty']
+                    team_fixtures.append({
+                        "opponent": opp_name,
+                        "is_home": is_home,
+                        "difficulty": diff,
+                        "event": f['event']
+                    })
+                
+                fdr_table.append({
+                    "id": team_id,
+                    "name": t['name'],
+                    "short_name": t['short_name'],
+                    "code": t['code'],
+                    "logo": f"https://resources.premierleague.com/premierleague/badges/t{t['code']}.png",
+                    "fixtures": team_fixtures
+                })
+                
+        if next_event:
             return {
-                "gameweek": current_event['name'],
-                "deadline": current_event['deadline_time']
+                "gameweek": next_event['name'],
+                "deadline": next_event['deadline_time'],
+                "fdr_table": fdr_table
             }
-        return {"gameweek": "Unknown", "deadline": None}
-    except Exception:
-        return {"gameweek": "Unknown", "deadline": None}
+        return {"gameweek": "Unknown", "deadline": "", "fdr_table": fdr_table}
+    except Exception as e:
+        return {"gameweek": "Unknown", "deadline": "", "fdr_table": [], "error": str(e)}
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=3001, reload=True)

@@ -140,9 +140,9 @@ class OCREngine:
 
         # ── Build structured items with XY coordinates ──
         all_items = []
-        for bbox, text, conf in results:
-            y_center = (bbox[0][1] + bbox[2][1]) / 2
-            x_center = (bbox[0][0] + bbox[2][0]) / 2
+        for (bbox, text, conf) in results:
+            y_center = (bbox[0][1] + bbox[2][1]) / 2.0
+            x_center = (bbox[0][0] + bbox[1][0]) / 2.0
             all_items.append({
                 'raw_text': text,
                 'y': y_center,
@@ -150,6 +150,12 @@ class OCREngine:
                 'conf': conf,
             })
 
+        candidate_items, detected_powerups = self._filter_items(all_items)
+        # (Removed captaincy detection as it is now gracefully handled via points projection)
+
+        return candidate_items, detected_powerups
+
+    def _filter_items(self, all_items: List[Dict]) -> Tuple[List[Dict], List[str]]:
         # ── Detect Powerups from raw OCR text ──
         powerup_keywords = ["Wildcard", "Bench Boost", "Triple Captain", "Free Hit"]
         detected_powerups = []
@@ -228,6 +234,7 @@ class OCREngine:
 
         return candidate_items, detected_powerups
 
+
     # ──────────────────────────────────────────────────────────────────
     # SPATIAL PLAYER MATCHING  (the core of the new engine)
     # ──────────────────────────────────────────────────────────────────
@@ -276,7 +283,7 @@ class OCREngine:
             if match and match[1] > 86:
                 for p in fpl_players:
                     if p['web_name'] == match[0] and p['id'] not in used_ids:
-                        item['player'] = p
+                        item['player'] = p.copy()
                         item['match_score'] = match[1]
                         matched_items.append(item)
                         used_ids.add(p['id'])
