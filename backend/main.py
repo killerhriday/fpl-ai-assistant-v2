@@ -28,20 +28,30 @@ app.add_middleware(
 jobs = {}
 fpl_cache = {"data": None, "timestamp": 0}
 
+import urllib.request
 def get_fpl_data():
     global fpl_cache
     if time.time() - fpl_cache["timestamp"] > 3600: # 1 hour cache
         try:
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            }
-            r = requests.get('https://fantasy.premierleague.com/api/bootstrap-static/', headers=headers, timeout=5)
-            r.raise_for_status()
-            r2 = requests.get('https://fantasy.premierleague.com/api/fixtures/', headers=headers, timeout=5)
-            fpl_cache["data"] = r.json()
-            fpl_cache["fixtures"] = r2.json() if r2.ok else []
+            req_data = urllib.request.Request(
+                'https://fantasy.premierleague.com/api/bootstrap-static/', 
+                headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:109.0) Gecko/20100101 Firefox/115.0'}
+            )
+            with urllib.request.urlopen(req_data, timeout=5) as response:
+                fpl_cache["data"] = json.loads(response.read())
+            
+            req_fix = urllib.request.Request(
+                'https://fantasy.premierleague.com/api/fixtures/', 
+                headers={'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:109.0) Gecko/20100101 Firefox/115.0'}
+            )
+            try:
+                with urllib.request.urlopen(req_fix, timeout=5) as response:
+                    fpl_cache["fixtures"] = json.loads(response.read())
+            except Exception:
+                fpl_cache["fixtures"] = []
+                
             fpl_cache["timestamp"] = time.time()
-        except Exception:
+        except Exception as e:
             if not fpl_cache["data"]:
                 try:
                     with open('fpl_data_cache.json', 'r') as f:
