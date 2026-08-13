@@ -64,6 +64,17 @@ Instead of requiring users to manually log in with their FPL credentials (which 
    - **AI Summary:** A plain-English explanation of why the transfer was suggested.
 6. **Check the Dashboards:** Use the "FPL Player Status Board" to check for league-wide injuries, the "Gameweek Fixtures" board for live scores and upcoming match times, and the "Latest FPL News" feed for dynamic data trends (like who is rising in price or being panic-sold).
 
+## 🆕 Latest Updates (August 2026)
+
+Here is a complete list of everything we just built and updated in the application right now:
+
+1. **Animated Football Upload UI**: Completely replaced the generic globe icon in the drag-and-drop zone with a custom, playfully animated football (soccer ball) SVG that kicks and bounces, giving the app a premium sports feel.
+2. **Multi-Transfer Engine Upgrade**: Upgraded the transfer algorithm to handle 1 to 5 simultaneous transfers based on available Free Transfers. It strictly enforces at least 1 transfer if free transfers are available (preventing idle hoarding).
+3. **Dynamic Point-Hit Calculator**: The transfer engine now mathematically penalizes recommendations that exceed the user's free transfer limit, automatically deducting a 4-point hit per extra transfer from the projected gain.
+4. **Strict Spatial OCR Validation**: Hardened the Computer Vision OCR pipeline by ripping out the old, fuzzy-matching approach and replacing it with strict Y-coordinate bounding boxes to eliminate false positives from shirt sponsors and UI artifacts.
+5. **Captaincy UI Simplification**: Removed the error-prone Captain (C) and Vice-Captain (V) detection logic (which failed on compressed screenshots) and completely stripped the captaincy badges and point-doubling from the UI, opting for a much cleaner pitch layout focused entirely on base projected points.
+6. **Backend Server Fixes**: Removed hallucinated placeholder functions (`_detect_powerups`) and fixed variable reassignment bugs in the Spatial Player Matching pipeline to ensure rock-solid stability.
+
 ## ✨ What We Built (The Super Long Feature List)
 
 Here is a comprehensive list of everything implemented in this application to ensure maximum performance and FPL optimization:
