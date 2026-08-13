@@ -48,14 +48,21 @@ def get_fpl_data():
                 with urllib.request.urlopen(req_fix, timeout=5) as response:
                     fpl_cache["fixtures"] = json.loads(response.read())
             except Exception:
-                fpl_cache["fixtures"] = []
+                try:
+                    with open('fixtures_cache.json', 'r') as f:
+                        fpl_cache["fixtures"] = json.load(f)
+                except Exception:
+                    fpl_cache["fixtures"] = []
                 
             fpl_cache["timestamp"] = time.time()
         except Exception as e:
+            print("ERROR FETCHING LIVE FPL DATA:", str(e))
             if not fpl_cache["data"]:
                 try:
                     with open('fpl_data_cache.json', 'r') as f:
                         fpl_cache["data"] = json.load(f)
+                    with open('fixtures_cache.json', 'r') as f:
+                        fpl_cache["fixtures"] = json.load(f)
                     fpl_cache["timestamp"] = time.time()
                 except Exception:
                     raise Exception("EXTERNAL_DATA_UNAVAILABLE")
