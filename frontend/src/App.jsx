@@ -58,8 +58,9 @@ function Timeline({ stage, status, dataFreshness }) {
   )
 }
 
+const fallbackSvg = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23404040'/><circle cx='50' cy='40' r='20' fill='%23666'/><path d='M20 100 Q50 60 80 100' fill='%23666'/></svg>";
+
 function PitchPlayer({ player }) {
-  const fallbackSvg = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23404040'/><circle cx='50' cy='40' r='20' fill='%23666'/><path d='M20 100 Q50 60 80 100' fill='%23666'/></svg>";
   return (
     <div className={`pitch-player ${player.is_new ? 'new-player' : ''}`}>
       <img 
@@ -509,7 +510,12 @@ function App() {
                 {jobData.global_injuries.map((inj, idx) => (
                   <div key={idx} className="injury-row" title={inj.news}>
                     <div className="injury-photo-container">
-                      <img src={inj.photo_url} alt={inj.player_name} className="injury-photo" />
+                      <img 
+                        src={inj.photo_url || fallbackSvg} 
+                        alt={inj.player_name} 
+                        className="injury-photo" 
+                        onError={(e) => { e.target.onerror = null; e.target.src = fallbackSvg; }}
+                      />
                       <span className={`status-dot ${inj.color}`}></span>
                     </div>
                     <div className="injury-info">

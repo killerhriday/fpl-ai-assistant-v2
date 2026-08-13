@@ -36,13 +36,19 @@ def get_fpl_data():
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
             }
             r = requests.get('https://fantasy.premierleague.com/api/bootstrap-static/', headers=headers, timeout=5)
+            r.raise_for_status()
             r2 = requests.get('https://fantasy.premierleague.com/api/fixtures/', headers=headers, timeout=5)
             fpl_cache["data"] = r.json()
             fpl_cache["fixtures"] = r2.json() if r2.ok else []
             fpl_cache["timestamp"] = time.time()
         except Exception:
             if not fpl_cache["data"]:
-                raise Exception("EXTERNAL_DATA_UNAVAILABLE")
+                try:
+                    with open('fpl_data_cache.json', 'r') as f:
+                        fpl_cache["data"] = json.load(f)
+                    fpl_cache["timestamp"] = time.time()
+                except Exception:
+                    raise Exception("EXTERNAL_DATA_UNAVAILABLE")
     return fpl_cache["data"], fpl_cache.get("fixtures", [])
 
 def process_job(request_id: str, image_bytes: bytes, transfers: int, strategy: str, bank_balance: float):
