@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600" width="100%" height="100%">
+  <!-- Grass background with stripes -->
+  <rect width="400" height="600" fill="#2e7d32" />
+  <g fill="#388e3c">
+    <rect y="0" width="400" height="60" />
+    <rect y="120" width="400" height="60" />
+    <rect y="240" width="400" height="60" />
+    <rect y="360" width="400" height="60" />
+    <rect y="480" width="400" height="60" />
+  </g>
+
+  <!-- Pitch boundaries -->
+  <rect x="20" y="20" width="360" height="560" fill="none" stroke="#ffffff" stroke-width="3" opacity="0.8" />
+  
+  <!-- Center line -->
+  <line x1="20" y1="300" x2="380" y2="300" stroke="#ffffff" stroke-width="3" opacity="0.8" />
+  
+  <!-- Center circle -->
+  <circle cx="200" cy="300" r="45" fill="none" stroke="#ffffff" stroke-width="3" opacity="0.8" />
+  <circle cx="200" cy="300" r="3" fill="#ffffff" opacity="0.8" />
+
+  <!-- Top penalty area -->
+  <rect x="100" y="20" width="200" height="90" fill="none" stroke="#ffffff" stroke-width="3" opacity="0.8" />
+  <!-- Top goal area -->
+  <rect x="150" y="20" width="100" height="30" fill="none" stroke="#ffffff" stroke-width="3" opacity="0.8" />
+  <!-- Top penalty mark -->
+  <circle cx="200" cy="70" r="2" fill="#ffffff" opacity="0.8" />
+  <!-- Top penalty arc (D) -->
+  <path d="M 160 110 A 45 45 0 0 0 240 110" fill="none" stroke="#ffffff" stroke-width="3" opacity="0.8" />
+  <!-- Top goal -->
+  <rect x="170" y="10" width="60" height="10" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.8" />
+
+  <!-- Bottom penalty area -->
+  <rect x="100" y="490" width="200" height="90" fill="none" stroke="#ffffff" stroke-width="3" opacity="0.8" />
+  <!-- Bottom goal area -->
+  <rect x="150" y="550" width="100" height="30" fill="none" stroke="#ffffff" stroke-width="3" opacity="0.8" />
+  <!-- Bottom penalty mark -->
+  <circle cx="200" cy="530" r="2" fill="#ffffff" opacity="0.8" />
+  <!-- Bottom penalty arc (D) -->
+  <path d="M 160 490 A 45 45 0 0 1 240 490" fill="none" stroke="#ffffff" stroke-width="3" opacity="0.8" />
+  <!-- Bottom goal -->
+  <rect x="170" y="580" width="60" height="10" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.8" />
+
+  <!-- Corner arcs -->
+  <path d="M 20 40 A 20 20 0 0 0 40 20" fill="none" stroke="#ffffff" stroke-width="3" opacity="0.8" />
+  <path d="M 380 40 A 20 20 0 0 1 360 20" fill="none" stroke="#ffffff" stroke-width="3" opacity="0.8" />
+  <path d="M 20 560 A 20 20 0 0 1 40 580" fill="none" stroke="#ffffff" stroke-width="3" opacity="0.8" />
+  <path d="M 380 560 A 20 20 0 0 0 360 580" fill="none" stroke="#ffffff" stroke-width="3" opacity="0.8" />
+</svg>
