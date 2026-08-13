@@ -9,13 +9,10 @@ from typing import Optional
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
-import cv2
-import numpy as np
-import easyocr
-from rapidfuzz import process, fuzz
 import requests
 from models import ProcessResponse, PrivacyStatus
-from scoring import get_best_transfers, format_player
+from services.ocr import ocr_service
+from services.analytics import get_best_transfers, format_player, calculate_budget_metrics, get_global_injuries, generate_ai_summary
 
 app = FastAPI()
 
@@ -26,8 +23,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-reader = easyocr.Reader(['en'], gpu=False)
 
 # In-memory storage for jobs and FPL cache
 jobs = {}
@@ -50,28 +45,20 @@ def get_fpl_data():
                 raise Exception("EXTERNAL_DATA_UNAVAILABLE")
     return fpl_cache["data"], fpl_cache.get("fixtures", [])
 
-def process_job(request_id: str, image_bytes: bytes, transfers: int, strategy: str):
+def process_job(request_id: str, image_bytes: bytes, transfers: int, strategy: str, bank_balance: float):
     job = jobs[request_id]
     temp_files = []
     
     try:
         start_time = time.time()
         
-        # Stage 2: Validate image
-        job.stage = "Image validated and prepared"
-        job.message = "Checking image format and preparing it for OCR."
-        nparr = np.frombuffer(image_bytes, np.uint8)
-        img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        if img is None:
-            raise Exception("INVALID_IMAGE")
-            
-        # Stage 3: OCR
+        # Stage 2 & 3: Validating and OCR
         job.stage = "Reading player names"
         job.message = "Identifying players from your screenshot."
         ocr_start = time.time()
-        results = reader.readtext(img)
-        results.sort(key=lambda x: x[0][0][1])
-        extracted_texts = [res[1] for res in results if len(res[1]) > 2]
+        
+        extracted_texts, detected_powerups = ocr_service.process_image(image_bytes)
+        
         job.performance['ocr_ms'] = (time.time() - ocr_start) * 1000
         
         # Stage 4: Matching
@@ -84,31 +71,10 @@ def process_job(request_id: str, image_bytes: bytes, transfers: int, strategy: s
         
         players = fpl_data['elements']
         teams = fpl_data['teams']
-        player_names_list = [p['web_name'] for p in players]
-        
-        # Determine Powerups
-        powerup_keywords = ["Wildcard", "Bench Boost", "Triple Captain", "Free Hit"]
-        detected_powerups = []
-        for text in extracted_texts:
-            for kw in powerup_keywords:
-                if fuzz.partial_ratio(kw.lower(), text.lower()) > 85:
-                    if kw not in detected_powerups:
-                        detected_powerups.append(kw)
-                        
-        matched_players = []
-        used_ids = set()
         
         analysis_start = time.time()
-        for text in extracted_texts:
-            # Clean text
-            clean_text = text.replace('1', 'l').replace('0', 'o')
-            match = process.extractOne(clean_text, player_names_list, scorer=fuzz.WRatio)
-            if match and match[1] > 65:  # Lowered threshold to catch more players
-                for p in players:
-                    if p['web_name'] == match[0] and p['id'] not in used_ids:
-                        matched_players.append(p)
-                        used_ids.add(p['id'])
-                        break
+        
+        matched_players = ocr_service.match_players(extracted_texts, players)
         
         job.ocr_summary = {
             "players_detected": len(extracted_texts),
@@ -140,6 +106,7 @@ def process_job(request_id: str, image_bytes: bytes, transfers: int, strategy: s
         job.stage = "Ranking transfer candidates"
         job.message = "Testing transfer options for your team."
         
+        used_ids = set([p['id'] for p in matched_players])
         sug_starters, sug_bench, t_cards = get_best_transfers(starters, bench, players, used_ids, transfers, strategy)
         
         job.original_team = {
@@ -183,6 +150,18 @@ def process_job(request_id: str, image_bytes: bytes, transfers: int, strategy: s
                         
         job.fixtures = fixtures_to_show
         
+        # Calculate new dashboard metrics
+        job.budget = calculate_budget_metrics(starters + bench, bank_balance)
+        job.global_injuries = get_global_injuries(fpl_data)
+        job.ai_summary = generate_ai_summary(t_cards, job.budget, job.global_injuries, starters + bench)
+        
+        age = time.time() - fpl_cache["timestamp"]
+        job.data_freshness = {
+            "age_seconds": int(age),
+            "is_stale": age > 3600,
+            "source": "official"
+        }
+        
         if t_cards:
             job.message = f"Make {len(t_cards)} transfer(s)."
         else:
@@ -198,7 +177,6 @@ def process_job(request_id: str, image_bytes: bytes, transfers: int, strategy: s
         # Stage 10
         job.status = "complete"
         job.completed_at = datetime.utcnow().isoformat()
-        job.data_timestamp = datetime.fromtimestamp(fpl_cache["timestamp"]).isoformat()
         
     except Exception as e:
         job.status = "failed"
@@ -207,11 +185,11 @@ def process_job(request_id: str, image_bytes: bytes, transfers: int, strategy: s
     finally:
         # Guarantee cleanup of memory
         del image_bytes
-        if img is not None:
+        if 'img' in locals() and img is not None:
             del img
 
 @app.post("/api/process-team", response_model=ProcessResponse)
-async def upload_team(background_tasks: BackgroundTasks, squadImage: UploadFile = File(...), transfers: int = Form(1), strategy: str = Form("next_gameweek")):
+async def upload_team(background_tasks: BackgroundTasks, squadImage: UploadFile = File(...), transfers: int = Form(1), strategy: str = Form("next_gameweek"), bank_balance: float = Form(0.0)):
     request_id = str(uuid.uuid4())
     contents = await squadImage.read()
     
@@ -222,14 +200,16 @@ async def upload_team(background_tasks: BackgroundTasks, squadImage: UploadFile 
         request_id=request_id,
         status="accepted",
         created_at=datetime.utcnow().isoformat(),
-        input_metadata={"free_transfers": transfers, "image_persisted": False},
+        input_metadata={"free_transfers": transfers, "image_persisted": False, "bank_balance": bank_balance},
         strategy=strategy,
         stage="Screenshot received",
         message="Your screenshot was received securely."
     )
     jobs[request_id] = job
     
-    background_tasks.add_task(process_job, request_id, contents, transfers, strategy)
+    # Process job in background
+    background_tasks.add_task(process_job, request_id, contents, transfers, strategy, bank_balance)
+    
     return job
 
 @app.get("/api/process-team/{request_id}", response_model=ProcessResponse)
@@ -237,6 +217,20 @@ async def get_team_status(request_id: str):
     if request_id not in jobs:
         raise HTTPException(status_code=404, detail="NOT_FOUND")
     return jobs[request_id]
+
+@app.get("/api/metadata")
+async def get_metadata():
+    try:
+        fpl_data, _ = get_fpl_data()
+        current_event = next((e for e in fpl_data['events'] if e['is_next']), None)
+        if current_event:
+            return {
+                "gameweek": current_event['name'],
+                "deadline": current_event['deadline_time']
+            }
+        return {"gameweek": "Unknown", "deadline": None}
+    except Exception:
+        return {"gameweek": "Unknown", "deadline": None}
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=3001, reload=True)
