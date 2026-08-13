@@ -125,3 +125,19 @@ npm install
 npm run dev
 ```
 Runs on `http://localhost:5173`
+
+---
+
+## 🔮 Future Ideas & Roadmap
+
+We are constantly looking to elevate this app into the ultimate, premium FPL companion. Here are the top concepts slated for future development:
+
+### 🕸️ Deep Analytics Radar Charts (xG & xA)
+**The Concept:** When you click on any player on your interactive pitch, a sleek, dark-mode popup will overlay the screen rendering a beautiful, multi-axis radar chart.
+**How it Works:** It will dynamically compare the player's recent FPL points against their "Expected Goals (xG)", "Expected Assists (xA)", and "Expected Goal Involvement (xGI)" over the last 5 gameweeks.
+**Why it's a Game Changer:** It immediately visually flags if a player is "due for a massive haul" (e.g., they have extremely high xG but low actual points because they hit the post twice) or if they are "getting lucky" (scoring from low-probability shots) and you should sell them before their form inevitably drops to the mean.
+
+### 🥊 The "Who to Captain?" AI Debate Panel
+**The Concept:** A dedicated, interactive segment for the upcoming Gameweek that automatically filters your squad to select the top 3 statistically best captaincy options, presenting them in a head-to-head "debate" format.
+**How it Works:** The AI will pull in contextual data (upcoming opponent's defensive stats, player's historical record against that team, and European rotation risk) and generate a rapid "Pros vs. Cons" breakdown for each candidate.
+**Why it's a Game Changer:** Choosing a captain is the most agonizing decision of the week, often deciding mini-league titles. Providing sharp, data-backed bullet points like *"Pro: Opponent concedes the most chances down the right flank"* vs *"Con: Played 90 mins in the Champions League on Thursday, high risk of being benched"* would make this tool absolutely indispensable.
