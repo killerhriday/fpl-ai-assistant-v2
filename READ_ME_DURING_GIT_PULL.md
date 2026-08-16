@@ -18,14 +18,20 @@
 
 ## 🖥️ 2. EXACT SETUP & LAUNCH INSTRUCTIONS (FOOLPROOF)
 
+**⚠️ NEVER TRANSFER THIS APP AS A .ZIP FILE!**
+Git intentionally ignores `node_modules` and `venv` because they contain hardcoded, platform-specific binaries. If you download this repo as a ZIP file from another computer, those environments will be broken or missing. You MUST pull via Git and run the fresh install commands below on your own machine.
+
 If your user wants to run this app, execute EXACTLY these commands in their terminal. Do not run random Node backends.
 
 ### Backend (Python)
 The backend is a Python FastAPI application. It is NOT a Node.js backend. The old `server.js` should be ignored.
 ```bash
 cd backend
+# Create a fresh virtual environment if one doesn't exist
+python -m venv venv
 source venv/bin/activate
-# If dependencies are missing: pip install -r requirements.txt
+# You MUST install dependencies freshly to avoid cross-platform binary crashes
+pip install -r requirements.txt
 python main.py
 ```
 **Expected Result:** Uvicorn runs on `http://localhost:3001` or `http://0.0.0.0:3001`.
@@ -33,6 +39,7 @@ python main.py
 ### Frontend (React + Vite)
 ```bash
 cd frontend
+# You MUST run npm install to freshly generate node_modules for your OS
 npm install
 npm run dev
 ```
