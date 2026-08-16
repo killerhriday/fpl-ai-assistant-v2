@@ -13,6 +13,7 @@ import requests
 from models import ProcessResponse, PrivacyStatus
 from services.ocr import ocr_service
 from services.analytics import get_best_transfers, format_player, calculate_budget_metrics, get_global_injuries, generate_ai_summary, generate_fpl_news
+from services.ml_engine import ml_engine
 
 app = FastAPI()
 
@@ -97,6 +98,17 @@ def process_job(request_id: str, image_bytes: bytes, transfers: int, strategy: s
         players = fpl_data['elements']
         teams = fpl_data['teams']
         
+        # ── NEW: ML Predictive Engine Injection ──
+        # Predict "True Score" for all players based on deep data and override the default FPL ep_next
+        try:
+            ml_predictions = ml_engine.predict(players)
+            for p in players:
+                player_id = p.get('id')
+                if player_id in ml_predictions:
+                    p['ep_next'] = str(ml_predictions[player_id])
+        except Exception as e:
+            print(f"ML Engine warning: {e}")
+        
         analysis_start = time.time()
         
         # ── NEW: Spatial matching — positions come from WHERE players
@@ -134,7 +146,6 @@ def process_job(request_id: str, image_bytes: bytes, transfers: int, strategy: s
         
         # Build teams lookup for club short names (e.g. 1 → "ARS", 16 → "MUN")
         teams_map = {t['id']: t['short_name'] for t in teams}
-        teams_map_code = {t['id']: t['code'] for t in teams}
         
         # Fallback: assign original squad captain/vice based on projected points
         cap_candidates = sorted(starters, key=lambda x: float(x.get('ep_next', 0) or 0), reverse=True)
@@ -146,13 +157,13 @@ def process_job(request_id: str, image_bytes: bytes, transfers: int, strategy: s
             cap_candidates[1]['is_vice_captain'] = True
 
         job.original_team = {
-            "starters": [format_player(p, teams_map, teams_map_code) for p in starters],
-            "bench": [format_player(p, teams_map, teams_map_code) for p in bench]
+            "starters": [format_player(p, teams_map) for p in starters],
+            "bench": [format_player(p, teams_map) for p in bench]
         }
         
         job.suggested_team = {
-            "starters": [format_player(p, teams_map, teams_map_code, True) for p in sug_starters],
-            "bench": [format_player(p, teams_map, teams_map_code, True) for p in sug_bench]
+            "starters": [format_player(p, teams_map) for p in sug_starters],
+            "bench": [format_player(p, teams_map) for p in sug_bench]
         }
         
         job.transfers = t_cards
@@ -242,7 +253,7 @@ def process_job(request_id: str, image_bytes: bytes, transfers: int, strategy: s
         # Calculate new dashboard metrics
         job.budget = calculate_budget_metrics(starters + bench, bank_balance)
         job.global_injuries = get_global_injuries(fpl_data)
-        job.ai_summary = generate_ai_summary(t_cards, job.budget, job.global_injuries, starters + bench, transfers)
+        job.ai_summary = generate_ai_summary(t_cards, job.budget, job.global_injuries, starters + bench)
         job.news = generate_fpl_news(fpl_data)
         
         age = time.time() - fpl_cache["timestamp"]
@@ -360,6 +371,113 @@ async def get_metadata():
         return {"gameweek": "Unknown", "deadline": "", "fdr_table": fdr_table}
     except Exception as e:
         return {"gameweek": "Unknown", "deadline": "", "fdr_table": [], "error": str(e)}
+
+# ── NEW UNRESTRICTED ML & DATA APIs ──
+
+@app.get("/api/v2/players")
+async def get_all_players():
+    fpl_data, _ = get_fpl_data()
+    return fpl_data.get('elements', [])
+
+@app.get("/api/v2/players/{player_id}")
+async def get_player_details(player_id: int):
+    fpl_data, _ = get_fpl_data()
+    player = next((p for p in fpl_data.get('elements', []) if p['id'] == player_id), None)
+    if not player:
+        raise HTTPException(status_code=404, detail="Player not found")
+    return player
+
+@app.get("/api/v2/teams")
+async def get_all_teams():
+    fpl_data, _ = get_fpl_data()
+    return fpl_data.get('teams', [])
+
+@app.get("/api/v2/teams/{team_id}")
+async def get_team_details(team_id: int):
+    fpl_data, _ = get_fpl_data()
+    team = next((t for t in fpl_data.get('teams', []) if t['id'] == team_id), None)
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    return team
+
+@app.get("/api/v2/fixtures")
+async def get_all_fixtures():
+    _, fpl_fixtures = get_fpl_data()
+    return fpl_fixtures
+
+@app.get("/api/v2/fixtures/live")
+async def get_live_fixtures():
+    _, fpl_fixtures = get_fpl_data()
+    return [f for f in fpl_fixtures if f.get('started') and not f.get('finished')]
+
+@app.get("/api/v2/market/price-changes")
+async def get_price_changes():
+    fpl_data, _ = get_fpl_data()
+    players = fpl_data.get('elements', [])
+    risers = [p for p in players if p.get('cost_change_event', 0) > 0]
+    fallers = [p for p in players if p.get('cost_change_event', 0) < 0]
+    return {"risers": risers, "fallers": fallers}
+
+@app.get("/api/v2/market/transfers-in")
+async def get_transfers_in():
+    fpl_data, _ = get_fpl_data()
+    players = sorted(fpl_data.get('elements', []), key=lambda x: x.get('transfers_in_event', 0), reverse=True)
+    return players[:20]
+
+@app.get("/api/v2/market/transfers-out")
+async def get_transfers_out():
+    fpl_data, _ = get_fpl_data()
+    players = sorted(fpl_data.get('elements', []), key=lambda x: x.get('transfers_out_event', 0), reverse=True)
+    return players[:20]
+
+@app.get("/api/v2/injuries")
+async def get_injuries():
+    fpl_data, _ = get_fpl_data()
+    return get_global_injuries(fpl_data)
+
+@app.get("/api/v2/dream-team")
+async def get_dream_team():
+    fpl_data, _ = get_fpl_data()
+    players = sorted(fpl_data.get('elements', []), key=lambda x: float(x.get('event_points', 0)), reverse=True)
+    return players[:11]
+
+@app.get("/api/v2/stats/xg-xa")
+async def get_xg_xa_stats():
+    fpl_data, _ = get_fpl_data()
+    players = fpl_data.get('elements', [])
+    stats = []
+    for p in players:
+        stats.append({
+            "id": p['id'],
+            "name": p['web_name'],
+            "xG": p.get('expected_goals', 0),
+            "xA": p.get('expected_assists', 0),
+            "xGI": p.get('expected_goal_involvements', 0)
+        })
+    return sorted(stats, key=lambda x: float(x['xGI'] or 0), reverse=True)[:50]
+
+@app.get("/api/v2/ml/projections")
+async def get_ml_projections():
+    fpl_data, _ = get_fpl_data()
+    players = fpl_data.get('elements', [])
+    predictions = ml_engine.predict(players)
+    results = []
+    for p in players:
+        pid = p['id']
+        results.append({
+            "id": pid,
+            "name": p['web_name'],
+            "ml_projected_points": predictions.get(pid, 0)
+        })
+    return sorted(results, key=lambda x: x['ml_projected_points'], reverse=True)[:100]
+
+@app.get("/api/v2/system/health")
+async def system_health():
+    return {
+        "status": "healthy",
+        "cache_age_seconds": time.time() - fpl_cache["timestamp"],
+        "ml_engine_trained": ml_engine.is_trained
+    }
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=3001, reload=True)
