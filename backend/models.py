@@ -13,6 +13,8 @@ class PlayerSchema(BaseModel):
     price: float
     ep_next: float
     is_new: bool = False
+    is_captain: bool = False
+    is_vice_captain: bool = False
     photo_url: str
 
 class TransferCard(BaseModel):
@@ -23,7 +25,6 @@ class TransferCard(BaseModel):
     current_price: float
     new_price: float
     projected_gain_1gw: float
-    hit_cost: int
     reasons: List[str]
 
 class BudgetStatus(BaseModel):
