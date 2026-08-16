@@ -146,6 +146,7 @@ def process_job(request_id: str, image_bytes: bytes, transfers: int, strategy: s
         
         # Build teams lookup for club short names (e.g. 1 → "ARS", 16 → "MUN")
         teams_map = {t['id']: t['short_name'] for t in teams}
+        teams_map_code = {t['id']: t['code'] for t in teams}
         
         # Fallback: assign original squad captain/vice based on projected points
         cap_candidates = sorted(starters, key=lambda x: float(x.get('ep_next', 0) or 0), reverse=True)
@@ -157,13 +158,13 @@ def process_job(request_id: str, image_bytes: bytes, transfers: int, strategy: s
             cap_candidates[1]['is_vice_captain'] = True
 
         job.original_team = {
-            "starters": [format_player(p, teams_map) for p in starters],
-            "bench": [format_player(p, teams_map) for p in bench]
+            "starters": [format_player(p, teams_map, teams_map_code) for p in starters],
+            "bench": [format_player(p, teams_map, teams_map_code) for p in bench]
         }
         
         job.suggested_team = {
-            "starters": [format_player(p, teams_map) for p in sug_starters],
-            "bench": [format_player(p, teams_map) for p in sug_bench]
+            "starters": [format_player(p, teams_map, teams_map_code) for p in sug_starters],
+            "bench": [format_player(p, teams_map, teams_map_code) for p in sug_bench]
         }
         
         job.transfers = t_cards
