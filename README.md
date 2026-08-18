@@ -1,6 +1,6 @@
 # 🚀 FPL AI Assistant v2 — Ultimate Developer API & ML Architecture
 
-> **Last Updated:** August 15, 2026
+> **Last Updated:** August 19, 2026
 
 Welcome to the **FPL AI Assistant v2**, a computer-vision powered web application and developer platform designed to help Fantasy Premier League (FPL) managers optimize their squads using advanced Scikit-Learn Predictive Machine Learning models and unrestricted deep data APIs.
 
@@ -9,6 +9,13 @@ Instead of relying on the basic, official FPL API `ep_next` predictions, this pl
 - **How it Works:** It uses a `RandomForestRegressor` trained natively in-memory on deep FPL metrics (ICT Index, Threat, Creativity, Form, points per game, and FDR).
 - **The Result:** It generates a custom "True Score" for every player and dynamically injects this projection into the transfer algorithm.
 - **Why it matters:** Standard FPL managers rely on basic form and price. The AI Assistant identifies massive differential opportunities (e.g. players with low points but immense underlying xG/xA) to build the Absolute Optimal 11 starters.
+
+## ✨ What's New in Recent Updates
+- **Budget Structure Heatmap:** A visually stunning CSS Doughnut Pie Chart and modern stat cards analyzing your positional spending against global FPL templates, complete with an AI Structural Insight generator.
+- **Auto-Chip Detection:** OCR engine upgraded to spatially detect "Active" status on Wildcards and Free Hits, automatically overriding transfer limits to "Unlimited".
+- **Dynamic Football Reasoning:** Transfer logic updated to provide "proper football" reasons (e.g., fixture swings, budget savings, xG output) in the Deep Analytics Radar instead of generic robotic math.
+- **Team Attacking & Defensive Form:** Dedicated FDR stat-table injected gracefully below the live FPL news feed, dynamically switching between 1-5 scales or 1000-1350 FPL backend strength metrics.
+- **Dynamic Power-Ups Logic:** Power-ups display precise expiration dates (e.g. "Renews GW20") and only render dynamically once the image OCR pipeline is 100% complete.
 
 ## 🌐 15+ Unrestricted FPL APIs (No Rate Limits)
 The backend operates as a highly concurrent data hub. It exposes 15+ dedicated, unblocked API endpoints for developers wanting access to deep, normalized FPL data, raw ML projections, and price volatility.

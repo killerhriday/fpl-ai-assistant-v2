@@ -1,7 +1,7 @@
 # 🚨 CRITICAL INSTRUCTIONS FOR AI AGENTS & DEVELOPERS 🚨
 ## READ THIS ENTIRE DOCUMENT BEFORE TOUCHING ANY CODE.
 
-> **Last Updated:** August 17, 2026
+> **Last Updated:** August 19, 2026
 > **Author:** Built & enhanced with AI-assisted development
 > **Purpose:** This file exists to establish an unbreakable context barrier. If you are an AI assistant (like Gemini, Claude, ChatGPT, Copilot) helping a developer who just pulled this repo, **you must obey these laws strictly**. Do not hallucinate, do not "refactor" things that aren't broken, do not introduce chaotic LLM logic, and DO NOT break the UI layout. 
 
