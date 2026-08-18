@@ -379,7 +379,7 @@ async def get_metadata():
             for t in teams:
                 # FPL API currently sets attack_strength to 0 before season starts, using overall FDR scale (1-5)
                 atk_score = (t.get('strength_overall_home', 3) + t.get('strength_overall_away', 3)) / 2
-                def_score = (t.get('strength_defence_home', 3) + t.get('strength_defence_away', 3)) / 2
+                def_score = (t.get('strength_overall_home', 3) + t.get('strength_overall_away', 3)) / 2
                 
                 # If they are using the 1000-1350 scale
                 if t.get('strength_attack_home', 0) > 1000:
