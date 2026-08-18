@@ -507,33 +507,54 @@ function App() {
               </div>
             </div>
 
-            <div className="panel info-panel" style={{ marginTop: '1rem', textAlign: 'left' }}>
-              <h2 className="panel-header" style={{ color: '#38bdf8' }}>What's New in V2</h2>
+            <div className="panel" style={{ marginTop: '1rem' }}>
+              <h2 className="panel-header" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                </svg>
+                My Power-Ups (Chips)
+              </h2>
               
-              <div style={{ marginBottom: '1rem' }}>
-                <h3 style={{ marginBottom: '0.5rem', fontSize: '1.1rem' }}>1. The New APIs (Zero-Cost &amp; Keyless)</h3>
-                <p style={{ fontSize: '0.9rem', color: 'var(--text-faint)', lineHeight: '1.5' }}>
-                  As part of our data pivot, we bypassed paid API keys entirely and hardcoded the official, 100% free Fantasy Premier League endpoints into <code>fetch_fpl_data.js</code>. Because these are official endpoints, they don't require an authorization key and have virtually no rate limits:
-                </p>
-                <ul style={{ fontSize: '0.9rem', color: 'var(--text-faint)', paddingLeft: '1.5rem', marginTop: '0.5rem' }}>
-                  <li style={{ marginBottom: '0.5rem' }}><strong>.../api/bootstrap-static/:</strong> We use this massive endpoint to pull the live status of every player in the league, including their current price, injury flags (chance_of_playing_next_round), form, and Expected Points (ep_next).</li>
-                  <li><strong>.../api/entry/&#123;manager_id&#125;/:</strong> We use this to instantly pull your specific team's live status, including your exact bank balance and overall rank.</li>
-                </ul>
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-faint)', marginTop: '0.5rem', fontStyle: 'italic' }}>
-                  (Note: We can easily layer in the API-Football or Understat endpoints from the api_research.md document later if you want to pull deeper xG/xA stats, but for V1, we relied on the official FPL data feed).
-                </p>
-              </div>
+              <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', backgroundColor: 'var(--bg-main)', borderRadius: '6px', border: '1px solid var(--border)' }}>
+                  <div>
+                    <h3 style={{ fontSize: '1rem', marginBottom: '0.2rem' }}>Bench Boost</h3>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-faint)' }}>Points from your bench players are included in your total.</p>
+                  </div>
+                  <span style={{ padding: '4px 10px', fontSize: '0.8rem', fontWeight: 'bold', borderRadius: '20px', backgroundColor: 'rgba(56, 189, 248, 0.1)', color: 'var(--accent)' }}>
+                    Available
+                  </span>
+                </div>
 
-              <div>
-                <h3 style={{ marginBottom: '0.5rem', fontSize: '1.1rem' }}>2. How We Upgraded the ML Engine</h3>
-                <p style={{ fontSize: '0.9rem', color: 'var(--text-faint)', lineHeight: '1.5' }}>
-                  We moved away from your original idea of running "10 chaotic language models" at once, which would have hallucinated and crashed your laptop. Instead, we heavily upgraded <code>ml_engine.js</code> into a highly disciplined, deterministic model:
-                </p>
-                <ul style={{ fontSize: '0.9rem', color: 'var(--text-faint)', paddingLeft: '1.5rem', marginTop: '0.5rem' }}>
-                  <li style={{ marginBottom: '0.5rem' }}><strong>Strict Conservation Axioms:</strong> We hardcoded rules forcing the ML engine to act mathematically. It is now completely banned from suggesting a -4 point hit unless the xP (Expected Points) gain mathematically proves it is worth taking the penalty.</li>
-                  <li style={{ marginBottom: '0.5rem' }}><strong>Alien Logic Heuristics:</strong> We stripped the model of "human bias." By only feeding it raw numbers and injury flags from the ephemeral markdown file (<code>temp_fpl_analysis_state.md</code>), it cannot make emotional decisions based on favorite teams or news rumors.</li>
-                  <li><strong>Forced JSON Outputs:</strong> We upgraded the model's output layer so it cannot just spit out a generic paragraph. It is forced to output a strictly typed JSON object containing the Tactical Pitch layout and the Deep Justification Zone, providing the exact xG/xA math for every transfer it suggests.</li>
-                </ul>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', backgroundColor: 'var(--bg-main)', borderRadius: '6px', border: '1px solid var(--border)' }}>
+                  <div>
+                    <h3 style={{ fontSize: '1rem', marginBottom: '0.2rem' }}>Triple Captain</h3>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-faint)' }}>Your captain's points are tripled instead of doubled.</p>
+                  </div>
+                  <span style={{ padding: '4px 10px', fontSize: '0.8rem', fontWeight: 'bold', borderRadius: '20px', backgroundColor: 'rgba(56, 189, 248, 0.1)', color: 'var(--accent)' }}>
+                    Available
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', backgroundColor: 'var(--bg-main)', borderRadius: '6px', border: '1px solid var(--border)', opacity: 0.7 }}>
+                  <div>
+                    <h3 style={{ fontSize: '1rem', marginBottom: '0.2rem' }}>Wildcard</h3>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-faint)' }}>Unlimited free transfers. (Renews GW20)</p>
+                  </div>
+                  <span style={{ padding: '4px 10px', fontSize: '0.8rem', fontWeight: 'bold', borderRadius: '20px', backgroundColor: 'rgba(255, 255, 255, 0.05)', color: 'var(--text-faint)' }}>
+                    Unavailable (GW1)
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', backgroundColor: 'var(--bg-main)', borderRadius: '6px', border: '1px solid var(--border)', opacity: 0.7 }}>
+                  <div>
+                    <h3 style={{ fontSize: '1rem', marginBottom: '0.2rem' }}>Free Hit</h3>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-faint)' }}>Make unlimited free transfers for a single Gameweek.</p>
+                  </div>
+                  <span style={{ padding: '4px 10px', fontSize: '0.8rem', fontWeight: 'bold', borderRadius: '20px', backgroundColor: 'rgba(255, 255, 255, 0.05)', color: 'var(--text-faint)' }}>
+                    Unavailable (GW1)
+                  </span>
+                </div>
               </div>
             </div>
             </>

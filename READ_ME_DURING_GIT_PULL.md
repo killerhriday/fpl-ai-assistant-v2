@@ -112,6 +112,21 @@ If you are modifying the frontend (`frontend/src/App.jsx` or `frontend/src/index
 
 ---
 
+## ⚡ 6. POWER-UPS (CHIPS) LOGIC & RULES
+
+When analyzing a squad, the AI must STRICTLY abide by the official FPL Power-Up rules and plan its usage for the long term.
+
+1. **Gameweek 1 Restrictions:** `Wildcard` and `Free Hit` are mathematically **unavailable** in Gameweek 1. They are only available after GW1 is finished (from Gameweek 2 onwards). Do not let the AI suggest using them in GW1.
+2. **Renewal Date:** The first `Wildcard` expires and the second `Wildcard` is issued exactly at **Gameweek 20** (around late December). The AI must plan its transfers knowing this exact deadline.
+3. **Strategic Planning Requirements:** Whenever the AI evaluates a team (especially in the first batch of gameweeks), it MUST explicitly formulate a plan detailing:
+   - **When** we have to use each power-up.
+   - **Which** power-up we have to use.
+   - **In which Gameweek (GW)** we have to use it.
+   - **The type of team** we have (e.g., long-term build vs. aggressive differential).
+   - *Example AI Thought Process:* "We have a solid long-term team. Save the Wildcard until GW6 when fixture swings happen, and save Bench Boost for Double Gameweek 34 or 37."
+
+---
+
 ## 🏁 FINAL SUMMARY FOR AIs
 
 If a user asks you to "fix" something or "add a feature," you will consult this document first. 
