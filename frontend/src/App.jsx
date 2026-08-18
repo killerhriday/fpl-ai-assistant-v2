@@ -500,6 +500,10 @@ function App() {
               </div>
             </div>
           )}
+
+          {isComplete && (
+            <TeamStatsTable statsData={metadata?.team_stats} />
+          )}
         </div>
 
         {/* CENTER COLUMN */}
@@ -765,10 +769,7 @@ function App() {
                 </div>
               )}
               
-              <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                <FixtureDifficultyTable fdrData={metadata?.fdr_table} />
-                <TeamStatsTable statsData={metadata?.team_stats} />
-              </div>
+              <FixtureDifficultyTable fdrData={metadata?.fdr_table} />
 
             </>
           )}

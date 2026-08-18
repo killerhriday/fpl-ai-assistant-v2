@@ -377,16 +377,28 @@ async def get_metadata():
             # --- NEW: Team Attacking Stats ---
             team_stats = []
             for t in teams:
-                atk_score = (t.get('strength_attack_home', 1000) + t.get('strength_attack_away', 1000)) / 2
-                def_score = (t.get('strength_defence_home', 1000) + t.get('strength_defence_away', 1000)) / 2
+                # FPL API currently sets attack_strength to 0 before season starts, using overall FDR scale (1-5)
+                atk_score = (t.get('strength_overall_home', 3) + t.get('strength_overall_away', 3)) / 2
+                def_score = (t.get('strength_defence_home', 3) + t.get('strength_defence_away', 3)) / 2
+                
+                # If they are using the 1000-1350 scale
+                if t.get('strength_attack_home', 0) > 1000:
+                    atk_score = (t.get('strength_attack_home', 1000) + t.get('strength_attack_away', 1000)) / 2
+                    def_score = (t.get('strength_defence_home', 1000) + t.get('strength_defence_away', 1000)) / 2
+                    atk_rating = round(min(100, max(0, (atk_score - 1000) / 350 * 100)))
+                    def_rating = round(min(100, max(0, (def_score - 1000) / 350 * 100)))
+                else:
+                    # Using the 1-5 scale (map to 0-100)
+                    atk_rating = round(min(100, max(0, (atk_score - 1) / 4 * 100)))
+                    def_rating = round(min(100, max(0, (def_score - 1) / 4 * 100)))
+                
                 team_stats.append({
                     "name": t['name'],
                     "short_name": t['short_name'],
                     "attack_strength": atk_score,
                     "defense_strength": def_score,
-                    # Normalize for UI progress bar (max is usually ~1350)
-                    "attack_rating": round(min(100, max(0, (atk_score - 1000) / 350 * 100))),
-                    "defense_rating": round(min(100, max(0, (def_score - 1000) / 350 * 100)))
+                    "attack_rating": atk_rating,
+                    "defense_rating": def_rating
                 })
             # Sort by attacking rating desc
             team_stats.sort(key=lambda x: x['attack_rating'], reverse=True)
