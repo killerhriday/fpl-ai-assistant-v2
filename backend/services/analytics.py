@@ -156,11 +156,26 @@ def get_best_transfers(
                             
         if best_replacement:
             cost_diff = (best_out.get('now_cost', 50) - best_replacement.get('now_cost', 50)) / 10.0
-            reasons = [
-                "Superior upcoming fixture swing over the next 4 Gameweeks.",
-                "Expected to play closer to the box with higher xG/xA output.",
-                f"Frees up £{cost_diff:.1f}m in budget." if cost_diff > 0 else "Upgrades squad quality using available bank funds."
-            ]
+            reasons = []
+            
+            # Dynamic reasoning based on actual stats
+            ep_diff = round(float(best_replacement.get('ep_next', 0)) - float(best_out.get('ep_next', 0)), 1)
+            if ep_diff > 0:
+                reasons.append(f"Provides a +{ep_diff} point expected return (xP) upgrade over {best_out['web_name']}.")
+            else:
+                reasons.append("Superior long-term tactical fit and fixture rotation.")
+                
+            if cost_diff > 0:
+                reasons.append(f"Frees up £{cost_diff:.1f}m in the bank for future premium transfers.")
+            elif cost_diff < 0:
+                reasons.append("Utilizes available bank budget to aggressively upgrade squad quality.")
+                
+            form_in = float(best_replacement.get('form', 0))
+            form_out = float(best_out.get('form', 0))
+            if form_in > form_out:
+                reasons.append(f"Better recent attacking/defensive form ({form_in} vs {form_out}).")
+            elif best_replacement.get('element_type') in [3, 4]:
+                reasons.append("Higher expected goal involvement (xG/xA) mapping in upcoming fixtures.")
             
             t_card = TransferCard(
                 out_player_id=best_out['id'],

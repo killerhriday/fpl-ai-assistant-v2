@@ -221,7 +221,7 @@ function FixtureDifficultyTable({ fdrData }) {
   };
 
   return (
-    <div className="panel fdr-panel">
+    <div className="panel fdr-panel" style={{ flex: 1, minWidth: '300px' }}>
       <div className="panel-header-row">
         <h2 className="panel-header">Fixture Difficulty Rating (FDR)</h2>
       </div>
@@ -249,6 +249,52 @@ function FixtureDifficultyTable({ fdrData }) {
                     <div className="fdr-opponent">{f.opponent} ({f.is_home ? 'H' : 'A'})</div>
                   </td>
                 ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function TeamStatsTable({ statsData }) {
+  if (!statsData || statsData.length === 0) return null;
+  
+  return (
+    <div className="panel fdr-panel" style={{ flex: 1, minWidth: '300px' }}>
+      <div className="panel-header-row">
+        <h2 className="panel-header">Team Attacking Form (xG / Strength)</h2>
+      </div>
+      <div className="fdr-table-container">
+        <table className="fdr-table">
+          <thead>
+            <tr>
+              <th>Team</th>
+              <th>Attack Rating</th>
+              <th>Defense Rating</th>
+            </tr>
+          </thead>
+          <tbody>
+            {statsData.map((team, idx) => (
+              <tr key={idx}>
+                <td style={{ fontWeight: 'bold' }}>{team.name}</td>
+                <td>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '100%', backgroundColor: 'rgba(255,255,255,0.1)', height: '8px', borderRadius: '4px' }}>
+                      <div style={{ width: `${team.attack_rating}%`, backgroundColor: '#38bdf8', height: '100%', borderRadius: '4px' }}></div>
+                    </div>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-faint)', minWidth: '25px' }}>{team.attack_rating}</span>
+                  </div>
+                </td>
+                <td>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '100%', backgroundColor: 'rgba(255,255,255,0.1)', height: '8px', borderRadius: '4px' }}>
+                      <div style={{ width: `${team.defense_rating}%`, backgroundColor: '#4ade80', height: '100%', borderRadius: '4px' }}></div>
+                    </div>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-faint)', minWidth: '25px' }}>{team.defense_rating}</span>
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -719,7 +765,10 @@ function App() {
                 </div>
               )}
               
-              <FixtureDifficultyTable fdrData={metadata?.fdr_table} />
+              <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                <FixtureDifficultyTable fdrData={metadata?.fdr_table} />
+                <TeamStatsTable statsData={metadata?.team_stats} />
+              </div>
 
             </>
           )}

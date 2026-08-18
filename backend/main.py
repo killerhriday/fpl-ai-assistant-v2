@@ -371,13 +371,35 @@ async def get_metadata():
                     "fixtures": team_fixtures
                 })
                 
+            metadata = {}
+            metadata["fdr_table"] = sorted(fdr_table, key=lambda x: sum(f['difficulty'] for f in x['fixtures']))
+            
+            # --- NEW: Team Attacking Stats ---
+            team_stats = []
+            for t in teams:
+                atk_score = (t.get('strength_attack_home', 1000) + t.get('strength_attack_away', 1000)) / 2
+                def_score = (t.get('strength_defence_home', 1000) + t.get('strength_defence_away', 1000)) / 2
+                team_stats.append({
+                    "name": t['name'],
+                    "short_name": t['short_name'],
+                    "attack_strength": atk_score,
+                    "defense_strength": def_score,
+                    # Normalize for UI progress bar (max is usually ~1350)
+                    "attack_rating": round(min(100, max(0, (atk_score - 1000) / 350 * 100))),
+                    "defense_rating": round(min(100, max(0, (def_score - 1000) / 350 * 100)))
+                })
+            # Sort by attacking rating desc
+            team_stats.sort(key=lambda x: x['attack_rating'], reverse=True)
+            metadata["team_stats"] = team_stats[:10]  # Send top 10 attacking teams
+            
         if next_event:
             return {
                 "gameweek": next_event['name'],
                 "deadline": next_event['deadline_time'],
-                "fdr_table": fdr_table
+                "fdr_table": fdr_table,
+                "team_stats": team_stats[:10]
             }
-        return {"gameweek": "Unknown", "deadline": "", "fdr_table": fdr_table}
+        return {"gameweek": "Unknown", "deadline": "", "fdr_table": fdr_table, "team_stats": team_stats[:10] if 'team_stats' in locals() else []}
     except Exception as e:
         return {"gameweek": "Unknown", "deadline": "", "fdr_table": [], "error": str(e)}
 

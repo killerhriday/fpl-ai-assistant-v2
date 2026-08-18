@@ -78,6 +78,7 @@ class ProcessResponse(BaseModel):
     ai_summary: Optional[str] = None
     powerups: Optional[List[Dict[str, str]]] = None
     news: Optional[List[Dict[str, str]]] = None
+    team_stats: Optional[List[Dict[str, Any]]] = None
     
     performance: Dict[str, float] = {}
     privacy: PrivacyStatus = PrivacyStatus()
