@@ -409,9 +409,9 @@ async def get_metadata():
                 "gameweek": next_event['name'],
                 "deadline": next_event['deadline_time'],
                 "fdr_table": fdr_table,
-                "team_stats": team_stats[:10]
+                "team_stats": team_stats
             }
-        return {"gameweek": "Unknown", "deadline": "", "fdr_table": fdr_table, "team_stats": team_stats[:10] if 'team_stats' in locals() else []}
+        return {"gameweek": "Unknown", "deadline": "", "fdr_table": fdr_table, "team_stats": team_stats if 'team_stats' in locals() else []}
     except Exception as e:
         return {"gameweek": "Unknown", "deadline": "", "fdr_table": [], "error": str(e)}
 
