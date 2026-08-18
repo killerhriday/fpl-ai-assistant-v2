@@ -590,6 +590,13 @@ function App() {
           </div>
 
           {isComplete && (
+            <>
+              <TeamStatsTable statsData={metadata?.team_stats} />
+              <BudgetHeatmap team={jobData.original_team} />
+            </>
+          )}
+
+          {isComplete && (
             <div className="panel">
               <h2 className="panel-header">Latest FPL News</h2>
               <div className="news-feed">
@@ -607,13 +614,6 @@ function App() {
                 )}
               </div>
             </div>
-          )}
-
-          {isComplete && (
-            <>
-              <TeamStatsTable statsData={metadata?.team_stats} />
-              <BudgetHeatmap team={jobData.original_team} />
-            </>
           )}
         </div>
 
