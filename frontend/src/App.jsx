@@ -94,7 +94,7 @@ function Pitch({ starters, bench, title, formation, onPlayerClick, selectedPlaye
   )
 }
 
-function PlayerRadarChart({ player }) {
+function PlayerRadarChart({ player, transfers }) {
   if (!player) return (
     <div className="empty-text" style={{ textAlign: 'center', padding: '2rem 1rem' }}>
       Click on any player on the pitch to view their Deep Analytics Radar (xG, xA, xGI).
@@ -163,6 +163,25 @@ function PlayerRadarChart({ player }) {
           </text>
         ))}
       </svg>
+      
+      {(() => {
+        if (!transfers) return null;
+        const transferInfo = transfers.find(t => t.in_player_id === player.id);
+        if (!transferInfo) return null;
+        return (
+          <div style={{ marginTop: '1rem', padding: '0.75rem', backgroundColor: 'rgba(56, 189, 248, 0.05)', border: '1px solid rgba(56, 189, 248, 0.2)', borderRadius: '6px', width: '100%', maxWidth: '300px' }}>
+            <h4 style={{ fontSize: '0.9rem', color: '#38bdf8', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              Replacing {transferInfo.out_player_name}
+            </h4>
+            <ul style={{ paddingLeft: '1.2rem', margin: 0, fontSize: '0.85rem', color: 'var(--text-faint)' }}>
+              {transferInfo.reasons.map((r, i) => (
+                <li key={i} style={{ marginBottom: '0.2rem' }}>{r}</li>
+              ))}
+            </ul>
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -711,7 +730,7 @@ function App() {
           {isComplete && (
             <div className="panel stats-panel">
               <h2 className="panel-header">Deep Analytics Radar</h2>
-              <PlayerRadarChart player={selectedPlayer} />
+              <PlayerRadarChart player={selectedPlayer} transfers={jobData?.transfers} />
             </div>
           )}
 

@@ -155,7 +155,12 @@ def get_best_transfers(
                             best_new_bench = new_bench
                             
         if best_replacement:
-            reasons = ["Higher projected points", "Better overall value"]
+            cost_diff = (best_out.get('now_cost', 50) - best_replacement.get('now_cost', 50)) / 10.0
+            reasons = [
+                "Superior upcoming fixture swing over the next 4 Gameweeks.",
+                "Expected to play closer to the box with higher xG/xA output.",
+                f"Frees up £{cost_diff:.1f}m in budget." if cost_diff > 0 else "Upgrades squad quality using available bank funds."
+            ]
             
             t_card = TransferCard(
                 out_player_id=best_out['id'],
