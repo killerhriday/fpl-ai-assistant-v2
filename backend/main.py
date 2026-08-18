@@ -163,8 +163,8 @@ def process_job(request_id: str, image_bytes: bytes, transfers: int, strategy: s
         }
         
         job.suggested_team = {
-            "starters": [format_player(p, teams_map, teams_map_code) for p in sug_starters],
-            "bench": [format_player(p, teams_map, teams_map_code) for p in sug_bench]
+            "starters": [format_player(p, teams_map, teams_map_code, True) for p in sug_starters],
+            "bench": [format_player(p, teams_map, teams_map_code, True) for p in sug_bench]
         }
         
         job.transfers = t_cards
