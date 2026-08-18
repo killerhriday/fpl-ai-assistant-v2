@@ -730,10 +730,21 @@ function App() {
               
               <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 {(jobData.powerups || []).map((chip, idx) => {
-                  const desc = chip.name === 'Bench Boost' ? 'Points from your bench players are included.' :
-                               chip.name === 'Triple Captain' ? "Your captain's points are tripled." :
-                               chip.name === 'Wildcard' ? 'Unlimited free transfers.' :
-                               'Unlimited free transfers for a single Gameweek.';
+                  let desc = "";
+                  let advice = "";
+                  if (chip.name === 'Bench Boost') {
+                    desc = "Points from your bench players are included.";
+                    advice = "Best used: Double GW34 or GW37. Does not renew.";
+                  } else if (chip.name === 'Triple Captain') {
+                    desc = "Your captain's points are tripled.";
+                    advice = "Best used: Double GW25 or GW34. Does not renew.";
+                  } else if (chip.name === 'Wildcard') {
+                    desc = "Unlimited free transfers to rebuild your squad.";
+                    advice = "Expires: GW19. Renews: GW20. Best used: GW6 fixture swings.";
+                  } else {
+                    desc = "Unlimited free transfers for a single Gameweek.";
+                    advice = "Best used: Blank GW29. Does not renew.";
+                  }
                   
                   const bg = chip.status === 'Available' ? 'rgba(56, 189, 248, 0.1)' : 
                              chip.status === 'Active' ? 'rgba(34, 197, 94, 0.2)' : 
@@ -747,7 +758,8 @@ function App() {
                     <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', backgroundColor: 'var(--bg-main)', borderRadius: '6px', border: '1px solid var(--border)', opacity: chip.status === 'Unavailable' ? 0.7 : 1 }}>
                       <div>
                         <h3 style={{ fontSize: '1rem', marginBottom: '0.2rem' }}>{chip.name}</h3>
-                        <p style={{ fontSize: '0.8rem', color: 'var(--text-faint)' }}>{desc}</p>
+                        <p style={{ fontSize: '0.8rem', color: 'var(--text-faint)', marginBottom: '0.3rem' }}>{desc}</p>
+                        <p style={{ fontSize: '0.75rem', color: 'var(--accent)', fontStyle: 'italic', opacity: 0.9 }}>💡 AI Strategy: {advice}</p>
                       </div>
                       <span style={{ padding: '4px 10px', fontSize: '0.8rem', fontWeight: 'bold', borderRadius: '20px', backgroundColor: bg, color: color }}>
                         {chip.status}
