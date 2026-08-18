@@ -370,31 +370,64 @@ function BudgetHeatmap({ team }) {
         How your £{total.toFixed(1)}m squad value is distributed across the pitch.
       </p>
 
-      {/* Modern Heatmap Bar */}
-      <div style={{ display: 'flex', height: '14px', borderRadius: '4px', overflow: 'hidden', marginBottom: '2rem', gap: '2px' }}>
-        <div style={{ width: getWidth(gk), backgroundColor: '#fbbf24' }} title={`GK: £${gk.toFixed(1)}m`}></div>
-        <div style={{ width: getWidth(def), backgroundColor: '#4ade80' }} title={`DEF: £${def.toFixed(1)}m`}></div>
-        <div style={{ width: getWidth(mid), backgroundColor: '#38bdf8' }} title={`MID: £${mid.toFixed(1)}m`}></div>
-        <div style={{ width: getWidth(fwd), backgroundColor: '#f87171' }} title={`FWD: £${fwd.toFixed(1)}m`}></div>
-      </div>
-
-      {/* Modern Card List */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-        {rows.map(r => (
-          <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(255, 255, 255, 0.03)', padding: '0.75rem 1rem', borderRadius: '6px', borderLeft: `3px solid ${r.color}` }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: '0.9rem', fontWeight: 'bold', color: 'var(--text-main)', marginBottom: '0.2rem' }}>{r.name}</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-faint)' }}>{r.stat.desc}</div>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', minWidth: '60px' }}>
-              <div style={{ fontSize: '0.95rem', fontWeight: 'bold', fontFamily: 'monospace' }}>£{r.spend.toFixed(1)}m</div>
-              <div style={{ fontSize: '0.7rem', color: 'var(--text-faint)' }}>Avg: £{r.avg.toFixed(1)}m</div>
-            </div>
-            <div style={{ width: '85px', textAlign: 'right', fontSize: '0.8rem', fontWeight: 'bold', color: r.stat.color, marginLeft: '1rem' }}>
-              {r.stat.label}
+      {/* Visuals & Cards Container */}
+      <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+        
+        {/* Creative Doughnut Chart */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '150px' }}>
+          <div style={{
+            width: '140px', height: '140px',
+            borderRadius: '50%',
+            background: `conic-gradient(
+              #fbbf24 0% ${(gk / total) * 100}%,
+              #4ade80 ${(gk / total) * 100}% ${((gk + def) / total) * 100}%,
+              #38bdf8 ${((gk + def) / total) * 100}% ${((gk + def + mid) / total) * 100}%,
+              #f87171 ${((gk + def + mid) / total) * 100}% 100%
+            )`,
+            position: 'relative',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+          }}>
+            {/* Inner hole for doughnut effect */}
+            <div style={{
+              width: '90px', height: '90px',
+              backgroundColor: 'var(--panel-bg)',
+              borderRadius: '50%',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.2)'
+            }}>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-faint)' }}>Total Value</span>
+              <span style={{ fontSize: '1.05rem', fontWeight: 'bold', color: 'var(--text-main)' }}>£{total.toFixed(1)}m</span>
             </div>
           </div>
-        ))}
+          
+          {/* Legend */}
+          <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.25rem', fontSize: '0.75rem', color: 'var(--text-faint)', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: '8px', height: '8px', backgroundColor: '#fbbf24', borderRadius: '50%' }}></div> GK</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: '8px', height: '8px', backgroundColor: '#4ade80', borderRadius: '50%' }}></div> DEF</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: '8px', height: '8px', backgroundColor: '#38bdf8', borderRadius: '50%' }}></div> MID</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: '8px', height: '8px', backgroundColor: '#f87171', borderRadius: '50%' }}></div> FWD</span>
+          </div>
+        </div>
+
+        {/* Modern Card List */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', flex: 1, minWidth: '250px' }}>
+          {rows.map(r => (
+            <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(255, 255, 255, 0.03)', padding: '0.75rem 1rem', borderRadius: '6px', borderLeft: `3px solid ${r.color}` }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '0.9rem', fontWeight: 'bold', color: 'var(--text-main)', marginBottom: '0.2rem' }}>{r.name}</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-faint)' }}>{r.stat.desc}</div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', minWidth: '60px' }}>
+                <div style={{ fontSize: '0.95rem', fontWeight: 'bold', fontFamily: 'monospace' }}>£{r.spend.toFixed(1)}m</div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-faint)' }}>Avg: £{r.avg.toFixed(1)}m</div>
+              </div>
+              <div style={{ width: '85px', textAlign: 'right', fontSize: '0.8rem', fontWeight: 'bold', color: r.stat.color, marginLeft: '1rem' }}>
+                {r.stat.label}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* AI Insight Box */}
