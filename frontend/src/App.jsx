@@ -330,63 +330,84 @@ function BudgetHeatmap({ team }) {
   // Global FPL Template Averages (approximate £100m structure)
   const template = { gk: 9.5, def: 24.5, mid: 42.0, fwd: 24.0, bench: 22.0 };
 
+  const getStatus = (spend, template, pos) => {
+    const diff = spend - template;
+    if (pos === 'bench') {
+      if (diff > 1.5) return { label: 'Expensive', color: '#f87171', desc: 'Too much value benched.' };
+      if (diff < -1.5) return { label: 'Threadbare', color: '#fbbf24', desc: 'Weak bench depth.' };
+      return { label: 'Optimal', color: '#4ade80', desc: 'Perfect bench value.' };
+    }
+    if (diff > 2.5) return { label: 'Heavy', color: '#38bdf8', desc: 'Aggressive spending.' };
+    if (diff < -2.5) return { label: 'Light', color: '#f87171', desc: 'Underfunded area.' };
+    return { label: 'Balanced', color: '#4ade80', desc: 'In line with template.' };
+  };
+
+  const rows = [
+    { id: 'GK', name: 'Goalkeepers', spend: gk, avg: template.gk, color: '#fbbf24', stat: getStatus(gk, template.gk, 'gk') },
+    { id: 'DEF', name: 'Defenders', spend: def, avg: template.def, color: '#4ade80', stat: getStatus(def, template.def, 'def') },
+    { id: 'MID', name: 'Midfielders', spend: mid, avg: template.mid, color: '#38bdf8', stat: getStatus(mid, template.mid, 'mid') },
+    { id: 'FWD', name: 'Forwards', spend: fwd, avg: template.fwd, color: '#f87171', stat: getStatus(fwd, template.fwd, 'fwd') },
+    { id: 'BENCH', name: 'Bench', spend: benchCost, avg: template.bench, color: 'var(--text-faint)', stat: getStatus(benchCost, template.bench, 'bench') }
+  ];
+
+  // Generate an AI Summary based on the most extreme diffs
+  let maxOver = rows.reduce((prev, current) => (current.spend - current.avg) > (prev.spend - prev.avg) ? current : prev);
+  let maxUnder = rows.reduce((prev, current) => (current.avg - current.spend) > (prev.avg - prev.spend) ? current : prev);
+  
+  let insightText = `Your budget is perfectly balanced against the global optimal template.`;
+  if ((maxOver.spend - maxOver.avg) >= 2.0 && (maxUnder.avg - maxUnder.spend) >= 2.0) {
+    insightText = `You are heavily invested in ${maxOver.name} at the expense of your ${maxUnder.name}. Consider reallocating funds if your ${maxUnder.id} output drops.`;
+  } else if ((maxOver.spend - maxOver.avg) >= 2.0) {
+    insightText = `You are running a premium-heavy ${maxOver.name} structure. This is highly explosive but leaves less room for error elsewhere.`;
+  } else if (benchCost > template.bench + 1.0) {
+    insightText = `You have significant funds tied up on your Bench. Downgrading a bench player could instantly fund a massive premium upgrade in your starting XI.`;
+  }
+
   return (
-    <div className="panel fdr-panel" style={{ marginTop: '1.5rem', flex: 1, minWidth: '300px' }}>
-      <div className="panel-header-row">
-        <h2 className="panel-header">Budget Structure Heatmap</h2>
+    <div className="panel" style={{ marginTop: '1.5rem', flex: 1, minWidth: '300px' }}>
+      <h2 className="panel-header" style={{ marginBottom: '0.5rem' }}>Budget Structure Analysis</h2>
+      <p style={{ fontSize: '0.85rem', color: 'var(--text-faint)', marginBottom: '1.5rem' }}>
+        How your £{total.toFixed(1)}m squad value is distributed across the pitch.
+      </p>
+
+      {/* Modern Heatmap Bar */}
+      <div style={{ display: 'flex', height: '14px', borderRadius: '4px', overflow: 'hidden', marginBottom: '2rem', gap: '2px' }}>
+        <div style={{ width: getWidth(gk), backgroundColor: '#fbbf24' }} title={`GK: £${gk.toFixed(1)}m`}></div>
+        <div style={{ width: getWidth(def), backgroundColor: '#4ade80' }} title={`DEF: £${def.toFixed(1)}m`}></div>
+        <div style={{ width: getWidth(mid), backgroundColor: '#38bdf8' }} title={`MID: £${mid.toFixed(1)}m`}></div>
+        <div style={{ width: getWidth(fwd), backgroundColor: '#f87171' }} title={`FWD: £${fwd.toFixed(1)}m`}></div>
       </div>
-      
-      <div style={{ display: 'flex', height: '24px', borderRadius: '12px', overflow: 'hidden', marginBottom: '1.5rem', marginTop: '0.5rem' }}>
-        <div style={{ width: getWidth(gk), backgroundColor: '#fbbf24', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 'bold', color: '#000' }} title={`GK: £${gk.toFixed(1)}m`}>GK</div>
-        <div style={{ width: getWidth(def), backgroundColor: '#4ade80', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 'bold', color: '#000' }} title={`DEF: £${def.toFixed(1)}m`}>DEF</div>
-        <div style={{ width: getWidth(mid), backgroundColor: '#38bdf8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 'bold', color: '#000' }} title={`MID: £${mid.toFixed(1)}m`}>MID</div>
-        <div style={{ width: getWidth(fwd), backgroundColor: '#f87171', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 'bold', color: '#000' }} title={`FWD: £${fwd.toFixed(1)}m`}>FWD</div>
+
+      {/* Modern Card List */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+        {rows.map(r => (
+          <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(255, 255, 255, 0.03)', padding: '0.75rem 1rem', borderRadius: '6px', borderLeft: `3px solid ${r.color}` }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: '0.9rem', fontWeight: 'bold', color: 'var(--text-main)', marginBottom: '0.2rem' }}>{r.name}</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-faint)' }}>{r.stat.desc}</div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', minWidth: '60px' }}>
+              <div style={{ fontSize: '0.95rem', fontWeight: 'bold', fontFamily: 'monospace' }}>£{r.spend.toFixed(1)}m</div>
+              <div style={{ fontSize: '0.7rem', color: 'var(--text-faint)' }}>Avg: £{r.avg.toFixed(1)}m</div>
+            </div>
+            <div style={{ width: '85px', textAlign: 'right', fontSize: '0.8rem', fontWeight: 'bold', color: r.stat.color, marginLeft: '1rem' }}>
+              {r.stat.label}
+            </div>
+          </div>
+        ))}
       </div>
-      
-      <div className="fdr-table-container">
-        <table className="fdr-table" style={{ fontSize: '0.85rem' }}>
-          <thead>
-            <tr>
-              <th>Area</th>
-              <th>Your Spend</th>
-              <th>Global Avg</th>
-              <th>Analysis</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td style={{ color: '#fbbf24', fontWeight: 'bold' }}>Goalkeepers</td>
-              <td>£{gk.toFixed(1)}m</td>
-              <td>£{template.gk}m</td>
-              <td style={{ color: gk > template.gk + 1 ? '#f87171' : '#4ade80' }}>{gk > template.gk + 1 ? '⚠️ Overspending' : '✅ Optimal'}</td>
-            </tr>
-            <tr>
-              <td style={{ color: '#4ade80', fontWeight: 'bold' }}>Defenders</td>
-              <td>£{def.toFixed(1)}m</td>
-              <td>£{template.def}m</td>
-              <td style={{ color: def > template.def + 2 ? '#f87171' : def < template.def - 2 ? '#fbbf24' : '#4ade80' }}>{def > template.def + 2 ? '⚠️ Too Heavy' : def < template.def - 2 ? '⚠️ Too Light' : '✅ Optimal'}</td>
-            </tr>
-            <tr>
-              <td style={{ color: '#38bdf8', fontWeight: 'bold' }}>Midfielders</td>
-              <td>£{mid.toFixed(1)}m</td>
-              <td>£{template.mid}m</td>
-              <td style={{ color: mid > template.mid + 3 ? '#38bdf8' : mid < template.mid - 3 ? '#fbbf24' : '#4ade80' }}>{mid > template.mid + 3 ? '🔥 Aggressive' : mid < template.mid - 3 ? '⚠️ Too Light' : '✅ Optimal'}</td>
-            </tr>
-            <tr>
-              <td style={{ color: '#f87171', fontWeight: 'bold' }}>Forwards</td>
-              <td>£{fwd.toFixed(1)}m</td>
-              <td>£{template.fwd}m</td>
-              <td style={{ color: fwd > template.fwd + 3 ? '#f87171' : fwd < template.fwd - 3 ? '#fbbf24' : '#4ade80' }}>{fwd > template.fwd + 3 ? '🔥 Aggressive' : fwd < template.fwd - 3 ? '⚠️ Too Light' : '✅ Optimal'}</td>
-            </tr>
-            <tr style={{ borderTop: '2px solid rgba(255,255,255,0.1)' }}>
-              <td style={{ color: 'var(--text-main)', fontWeight: 'bold' }}>Bench</td>
-              <td>£{benchCost.toFixed(1)}m</td>
-              <td>£{template.bench}m</td>
-              <td style={{ color: benchCost > template.bench + 1.5 ? '#f87171' : '#4ade80' }}>{benchCost > template.bench + 1.5 ? '⚠️ Expensive Bench' : '✅ Optimal'}</td>
-            </tr>
-          </tbody>
-        </table>
+
+      {/* AI Insight Box */}
+      <div style={{ marginTop: '1.5rem', padding: '1rem', backgroundColor: 'rgba(56, 189, 248, 0.05)', border: '1px solid rgba(56, 189, 248, 0.2)', borderRadius: '6px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+          <span style={{ fontSize: '1.1rem' }}>🤖</span>
+          <span style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#38bdf8' }}>AI Structural Insight</span>
+        </div>
+        <div style={{ fontSize: '0.85rem', color: 'var(--text-main)', lineHeight: '1.5' }}>
+          {insightText}
+        </div>
       </div>
+
     </div>
   );
 }
