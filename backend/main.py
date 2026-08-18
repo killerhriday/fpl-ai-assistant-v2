@@ -85,6 +85,14 @@ def process_job(request_id: str, image_bytes: bytes, transfers: int, strategy: s
         # Returns candidate items with XY coordinates + detected powerups
         candidate_items, detected_powerups = ocr_service.process_image(image_bytes)
         
+        job.powerups = detected_powerups
+        
+        # Override transfers if Wildcard or Free Hit is active
+        for p in detected_powerups:
+            if p['name'] in ['Wildcard', 'Free Hit'] and p['status'] == 'Active':
+                transfers = 99
+                break
+        
         job.performance['ocr_ms'] = (time.time() - ocr_start) * 1000
         
         # Stage 4: Matching with spatial row analysis

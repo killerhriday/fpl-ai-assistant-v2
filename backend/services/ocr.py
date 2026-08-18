@@ -156,14 +156,41 @@ class OCREngine:
         return candidate_items, detected_powerups
 
     def _filter_items(self, all_items: List[Dict]) -> Tuple[List[Dict], List[str]]:
-        # ── Detect Powerups from raw OCR text ──
-        powerup_keywords = ["Wildcard", "Bench Boost", "Triple Captain", "Free Hit"]
-        detected_powerups = []
+        # ── Detect Powerups and their Statuses from raw OCR text ──
+        powerup_keywords = {"Bench Boost": 0, "Triple Captain": 0, "Wildcard": 0, "Free Hit": 0}
+        statuses = []
+        
         for item in all_items:
-            for kw in powerup_keywords:
+            raw_upper = item['raw_text'].upper()
+            
+            for kw in powerup_keywords.keys():
                 if fuzz.partial_ratio(kw.lower(), item['raw_text'].lower()) > 85:
-                    if kw not in detected_powerups:
-                        detected_powerups.append(kw)
+                    powerup_keywords[kw] = item['x']
+                    
+            if "AVAILABLE" in raw_upper or "UNAVAILABLE" in raw_upper or "ACTIVE" in raw_upper or "PLAYED" in raw_upper:
+                statuses.append(item)
+                
+        detected_powerups = []
+        for kw, x_pos in powerup_keywords.items():
+            if x_pos > 0:
+                closest_status = "Available"
+                min_dist = 9999
+                for s in statuses:
+                    dist = abs(s['x'] - x_pos)
+                    if dist < min_dist:
+                        min_dist = dist
+                        s_text = s['raw_text'].upper()
+                        if "UNAVAILABLE" in s_text:
+                            closest_status = "Unavailable"
+                        elif "ACTIVE" in s_text or "PLAYED" in s_text:
+                            closest_status = "Active"
+                        else:
+                            closest_status = "Available"
+                            
+                if min_dist < 200:
+                    detected_powerups.append({"name": kw, "status": closest_status})
+                else:
+                    detected_powerups.append({"name": kw, "status": "Unknown"})
 
         # ── Filter out NON-PLAYER text (UI elements, fixtures, labels) ──
         # These are the words that appear on the FPL screenshot but are
