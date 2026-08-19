@@ -724,10 +724,11 @@ function App() {
                   </select>
                 </div>
 
+                {error && <div className="error-message" style={{position: 'absolute', bottom: '10px', color: '#f87171'}}>{error}</div>}
                 <button 
                   className="immersive-btn"
-                  onClick={processImage} 
-                  disabled={!image}
+                  onClick={() => handleSubmit(image)} 
+                  disabled={!image || transfers < 0}
                 >
                   RUN ANALYSIS
                 </button>
