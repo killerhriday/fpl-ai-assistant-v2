@@ -1041,7 +1041,7 @@ body {
   justify-content: center;
   min-height: calc(100vh - 80px);
   width: 100%;
-  background: #000000;
+  background: transparent;
   padding: 2rem;
   overflow: hidden;
   perspective: 2000px;

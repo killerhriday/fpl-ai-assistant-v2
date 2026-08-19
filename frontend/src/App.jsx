@@ -449,6 +449,9 @@ function BudgetHeatmap({ team }) {
 function MinimalLanding({ image, setImage, transfers, setTransfers, fileInputRef, handleDrop, processImage, error }) {
   return (
     <div className="minimal-landing-fullpage">
+      <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", zIndex: 0 }}>
+        <spline-viewer url="https://prod.spline.design/6Wq1Q7YGyM-iab9i/scene.splinecode"></spline-viewer>
+      </div>
       <div className="minimal-content-wrapper">
         <h1 className="minimal-title">FPL AI Assistant</h1>
         <p className="minimal-subtitle">Deterministic squad analysis powered by computer vision.</p>
