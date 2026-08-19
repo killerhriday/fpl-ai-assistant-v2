@@ -653,6 +653,7 @@ function App() {
         {/* CENTER COLUMN */}
         <div className="col-center workspace-col">
           {!isComplete && !isProcessing && (
+            <>
             <div className="immersive-upload-container">
               <div className="immersive-background-glow"></div>
               
