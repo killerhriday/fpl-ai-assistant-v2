@@ -653,85 +653,90 @@ function App() {
         {/* CENTER COLUMN */}
         <div className="col-center workspace-col">
           {!isComplete && !isProcessing && (
-            <>
-            <div className="panel upload-panel hero-upload">
-              <div className="upload-header-content">
-                <h1 className="hero-title">FPL AI Manager</h1>
-                <p className="hero-subtitle">Optimize your squad using Computer Vision & AI</p>
-                <p className="upload-desc">
-                  Upload a screenshot of your "Pitch View". The AI will detect your players, calculate optimal transfers based on long-term FDR, and protect your budget.
-                </p>
-              </div>
+            <div className="immersive-upload-container">
+              <div className="immersive-background-glow"></div>
               
+              <div className="immersive-header">
+                <h1 className="hero-title glitch-effect">FPL AI Manager</h1>
+                <p className="hero-subtitle typewriter-effect">Optimize your squad using Computer Vision & AI</p>
+              </div>
+
               <div 
-                className={`upload-area ${image ? 'has-image' : ''}`}
+                className={`immersive-dropzone ${image ? 'has-image' : ''}`}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={handleDrop}
                 onClick={() => fileInputRef.current.click()}
               >
-                <div className="upload-icon upload-football-animation">
-                   <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                     <circle cx="12" cy="12" r="10"></circle>
-                     <polygon points="12 6 16 9 14.5 14 9.5 14 8 9"></polygon>
-                     <line x1="12" y1="6" x2="12" y2="2"></line>
-                     <line x1="16" y1="9" x2="20.5" y2="7"></line>
-                     <line x1="14.5" y1="14" x2="18" y2="18.5"></line>
-                     <line x1="9.5" y1="14" x2="6" y2="18.5"></line>
-                     <line x1="8" y1="9" x2="3.5" y2="7"></line>
-                   </svg>
-                </div>
-                {image ? (
-                  <div className="selected-file">✅ {image.name} <span className="file-size">({(image.size/1024).toFixed(1)} KB)</span></div>
-                ) : (
-                  <div className="upload-text">
-                     <strong>Drop screenshot on the pitch</strong><br/>
-                     <span className="upload-subtext">or click to browse your files</span>
+                <div className="orbital-rings">
+                  <div className="ring ring-1"></div>
+                  <div className="ring ring-2"></div>
+                  <div className="ring ring-3"></div>
+                  <div className="upload-core-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                      <polyline points="17 8 12 3 7 8"></polyline>
+                      <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
                   </div>
-                )}
+                </div>
+                
+                <div className="upload-text-content">
+                  {image ? (
+                    <div className="selected-file-3d">
+                      <span className="success-check">✓</span> 
+                      <span className="file-name">{image.name}</span>
+                    </div>
+                  ) : (
+                    <>
+                      <h3 className="drop-title">Initialize Transfer Matrix</h3>
+                      <p className="drop-subtitle">Drag & Drop Pitch Screenshot</p>
+                    </>
+                  )}
+                </div>
                 <input type="file" ref={fileInputRef} onChange={(e) => setImage(e.target.files[0])} hidden accept="image/png, image/jpeg, image/webp"/>
               </div>
 
-              {image && (
-                <div className="image-actions">
-                  <button className="btn-secondary remove-btn" onClick={(e) => {e.stopPropagation(); setImage(null)}}>Remove Image</button>
-                </div>
-              )}
-
-              <div className="settings-container">
-                <div className="transfers-input-group modern-input">
-                  <label>Available Free Transfers</label>
+              <div className="immersive-settings">
+                <div className="transfers-input-group modern-input" style={{ background: 'rgba(255,255,255,0.05)', padding: '0.75rem 1.5rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '1px' }}>Free Transfers</label>
                   <select 
                     value={transfers} 
                     onChange={(e) => setTransfers(parseInt(e.target.value))}
                     style={{
                       width: '100%', 
-                      padding: '0.75rem', 
-                      backgroundColor: 'rgba(255, 255, 255, 0.05)', 
-                      border: '1px solid var(--border)', 
-                      borderRadius: '8px', 
-                      color: 'var(--text-main)', 
-                      fontSize: '1rem',
-                      appearance: 'none',
+                      background: 'transparent', 
+                      border: 'none', 
+                      color: '#fff', 
+                      fontSize: '1.2rem', 
+                      fontWeight: 'bold', 
+                      outline: 'none',
+                      marginTop: '0.5rem',
                       cursor: 'pointer'
                     }}
                   >
-                    <option value={0}>0 (Save Transfer)</option>
-                    <option value={1}>1 Free Transfer</option>
-                    <option value={2}>2 Free Transfers</option>
-                    <option value={3}>3 Free Transfers</option>
-                    <option value={4}>4 Free Transfers</option>
-                    <option value={5}>5 Free Transfers</option>
-                    <option value={99}>Unlimited</option>
+                    <option value={1} style={{color: '#000'}}>1</option>
+                    <option value={2} style={{color: '#000'}}>2</option>
+                    <option value={3} style={{color: '#000'}}>3</option>
+                    <option value={4} style={{color: '#000'}}>4</option>
+                    <option value={5} style={{color: '#000'}}>5</option>
+                    <option value={99} style={{color: '#000'}}>Unlimited</option>
                   </select>
                 </div>
+
+                <button 
+                  className="immersive-btn"
+                  onClick={processImage} 
+                  disabled={!image}
+                >
+                  RUN ANALYSIS
+                </button>
               </div>
 
-              {error && <div className="error-message">{error}</div>}
-
-              <button className="btn-primary analyze-btn" onClick={() => handleSubmit(image)} disabled={!image || transfers < 0}>
-                Analyze My Team
-              </button>
-              
+              {image && (
+                <button className="btn-secondary remove-btn" style={{ marginTop: '1.5rem', background: 'transparent', border: 'none', color: '#f87171', textDecoration: 'underline' }} onClick={(e) => {e.stopPropagation(); setImage(null)}}>
+                  Clear Selection
+                </button>
+              )}
               <div className="privacy-note">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{marginRight: 4, verticalAlign: '-1px'}}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
                 Your screenshot is processed in RAM and instantly deleted.
