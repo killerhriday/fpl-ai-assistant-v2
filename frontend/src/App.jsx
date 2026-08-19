@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import Background3D from './Background3D'
 import './index.css'
 
 const STAGES = [
@@ -449,8 +450,7 @@ function BudgetHeatmap({ team }) {
 function MinimalLanding({ image, setImage, transfers, setTransfers, fileInputRef, handleDrop, processImage, error }) {
   return (
     <div className="minimal-landing-fullpage">
-      <div className="asset-3d-1">⚽️</div>
-      <div className="asset-3d-2">📈</div>
+      <Background3D />
       <div className="minimal-content-wrapper">
         <h1 className="minimal-title">FPL AI Assistant</h1>
         <p className="minimal-subtitle">Deterministic squad analysis powered by computer vision.</p>
