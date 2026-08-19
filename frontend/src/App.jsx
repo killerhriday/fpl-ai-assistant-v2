@@ -333,12 +333,12 @@ function BudgetHeatmap({ team }) {
   const getStatus = (spend, template, pos) => {
     const diff = spend - template;
     if (pos === 'bench') {
-      if (diff > 1.5) return { label: 'Expensive', color: '#f87171', desc: 'Too much value benched.' };
-      if (diff < -1.5) return { label: 'Threadbare', color: '#fbbf24', desc: 'Weak bench depth.' };
+      if (diff >= 2.0) return { label: 'Expensive', color: '#f87171', desc: 'Too much value benched.' };
+      if (diff <= -2.0) return { label: 'Threadbare', color: '#fbbf24', desc: 'Weak bench depth.' };
       return { label: 'Optimal', color: '#4ade80', desc: 'Perfect bench value.' };
     }
-    if (diff > 2.5) return { label: 'Heavy', color: '#38bdf8', desc: 'Aggressive spending.' };
-    if (diff < -2.5) return { label: 'Light', color: '#f87171', desc: 'Underfunded area.' };
+    if (diff >= 2.0) return { label: 'Heavy', color: '#38bdf8', desc: 'Aggressive spending.' };
+    if (diff <= -2.0) return { label: 'Light', color: '#f87171', desc: 'Underfunded area.' };
     return { label: 'Balanced', color: '#4ade80', desc: 'In line with template.' };
   };
 
