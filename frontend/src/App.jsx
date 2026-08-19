@@ -539,6 +539,40 @@ function App() {
   const isProcessing = (reqId || jobData?.status === 'processing') && !isComplete && jobData?.status !== 'failed'
   const stage = jobData?.stage
 
+  if (!isComplete && !isProcessing) {
+    return (
+      <div className="app-shell">
+        {/* HEADER */}
+        <header className="top-header">
+          <div className="header-left">
+            <h1>FPL AI Assistant</h1>
+            <span className="subtitle">Deterministic Squad Analysis & Transfer Recommendations</span>
+          </div>
+          <div className="header-right">
+            {metadata && metadata.gameweek !== "Unknown" ? (
+              <span className="badge" style={{ borderColor: "rgba(56, 189, 248, 0.3)", color: "var(--text-main)" }}>
+                {metadata.gameweek}
+                {metadata.deadline && ` (Deadline: ${new Date(metadata.deadline).toLocaleDateString()})`}
+              </span>
+            ) : (
+              <span className="badge">Gameweek Active</span>
+            )}
+          </div>
+        </header>
+        <MinimalLanding 
+          image={image} 
+          setImage={setImage} 
+          transfers={transfers} 
+          setTransfers={setTransfers} 
+          fileInputRef={fileInputRef} 
+          handleDrop={handleDrop} 
+          processImage={() => handleSubmit(image)} 
+          error={error} 
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="app-shell">
       {/* HEADER */}
@@ -572,9 +606,7 @@ function App() {
         <div className="col-left workspace-col">
           <div className="panel">
             <h2 className="panel-header">My Team</h2>
-            {!isComplete && !isProcessing ? (
-              <p className="empty-text">Upload a screenshot to detect your current squad.</p>
-            ) : isProcessing ? (
+            {isProcessing ? (
               <p className="loading-text">Loading...</p>
             ) : (
               <div className="squad-summary">
@@ -601,9 +633,7 @@ function App() {
           
           <div className="panel">
             <h2 className="panel-header">AI Team</h2>
-            {!isComplete && !isProcessing ? (
-              <p className="empty-text">Your suggested team will appear here after analysis.</p>
-            ) : isProcessing ? (
+            {isProcessing ? (
               <p className="loading-text">Loading...</p>
             ) : (
               <div className="squad-summary">
@@ -652,136 +682,7 @@ function App() {
 
         {/* CENTER COLUMN */}
         <div className="col-center workspace-col">
-          {!isComplete && !isProcessing && (
-            <>
-            <div className="immersive-upload-container">
-              <div className="immersive-background-glow"></div>
-              
-              <div className="immersive-header">
-                <h1 className="hero-title glitch-effect">FPL AI Manager</h1>
-                <p className="hero-subtitle typewriter-effect">Optimize your squad using Computer Vision & AI</p>
-              </div>
-
-              <div 
-                className={`immersive-dropzone ${image ? 'has-image' : ''}`}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={handleDrop}
-                onClick={() => fileInputRef.current.click()}
-              >
-                <div className="orbital-rings">
-                  <div className="ring ring-1"></div>
-                  <div className="ring ring-2"></div>
-                  <div className="ring ring-3"></div>
-                  <div className="upload-core-icon">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                      <polyline points="17 8 12 3 7 8"></polyline>
-                      <line x1="12" y1="3" x2="12" y2="15"></line>
-                    </svg>
-                  </div>
-                </div>
-                
-                <div className="upload-text-content">
-                  {image ? (
-                    <div className="selected-file-3d">
-                      <span className="success-check">✓</span> 
-                      <span className="file-name">{image.name}</span>
-                    </div>
-                  ) : (
-                    <>
-                      <h3 className="drop-title">Initialize Transfer Matrix</h3>
-                      <p className="drop-subtitle">Drag & Drop Pitch Screenshot</p>
-                    </>
-                  )}
-                </div>
-                <input type="file" ref={fileInputRef} onChange={(e) => setImage(e.target.files[0])} hidden accept="image/png, image/jpeg, image/webp"/>
-              </div>
-
-              <div className="immersive-settings">
-                <div className="transfers-input-group modern-input" style={{ background: 'rgba(255,255,255,0.05)', padding: '0.75rem 1.5rem', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
-                  <label style={{ fontSize: '0.8rem', color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '1px' }}>Free Transfers</label>
-                  <select 
-                    value={transfers} 
-                    onChange={(e) => setTransfers(parseInt(e.target.value))}
-                    style={{
-                      width: '100%', 
-                      background: 'transparent', 
-                      border: 'none', 
-                      color: '#fff', 
-                      fontSize: '1.2rem', 
-                      fontWeight: 'bold', 
-                      outline: 'none',
-                      marginTop: '0.5rem',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    <option value={1} style={{color: '#000'}}>1</option>
-                    <option value={2} style={{color: '#000'}}>2</option>
-                    <option value={3} style={{color: '#000'}}>3</option>
-                    <option value={4} style={{color: '#000'}}>4</option>
-                    <option value={5} style={{color: '#000'}}>5</option>
-                    <option value={99} style={{color: '#000'}}>Unlimited</option>
-                  </select>
-                </div>
-
-                {error && <div className="error-message" style={{position: 'absolute', bottom: '10px', color: '#f87171'}}>{error}</div>}
-                <button 
-                  className="immersive-btn"
-                  onClick={() => handleSubmit(image)} 
-                  disabled={!image || transfers < 0}
-                >
-                  RUN ANALYSIS
-                </button>
-              </div>
-
-              {image && (
-                <button className="btn-secondary remove-btn" style={{ marginTop: '1.5rem', background: 'transparent', border: 'none', color: '#f87171', textDecoration: 'underline' }} onClick={(e) => {e.stopPropagation(); setImage(null)}}>
-                  Clear Selection
-                </button>
-              )}
-              <div className="privacy-note">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{marginRight: 4, verticalAlign: '-1px'}}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                Your screenshot is processed in RAM and instantly deleted.
-              </div>
-            </div>
-
-            <div className="panel" style={{ marginTop: '1rem' }}>
-              <h2 className="panel-header" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                </svg>
-                What's New in V2
-              </h2>
-              
-              <div style={{ marginBottom: '1.5rem', marginTop: '1rem' }}>
-                <h3 style={{ marginBottom: '0.5rem', fontSize: '1.1rem' }}>1. The New APIs (Zero-Cost & Keyless)</h3>
-                <p style={{ fontSize: '0.9rem', color: 'var(--text-faint)', lineHeight: '1.5' }}>
-                  As part of our data pivot, we bypassed paid API keys entirely and hardcoded the official, 100% free Fantasy Premier League endpoints into <code>fetch_fpl_data.js</code>. Because these are official endpoints, they don't require an authorization key and have virtually no rate limits:
-                </p>
-                <ul style={{ fontSize: '0.9rem', color: 'var(--text-faint)', paddingLeft: '1.5rem', marginTop: '0.5rem' }}>
-                  <li style={{ marginBottom: '0.5rem' }}><strong>.../api/bootstrap-static/:</strong> We use this massive endpoint to pull the live status of every player in the league, including their current price, injury flags (<code>chance_of_playing_next_round</code>), form, and Expected Points (<code>ep_next</code>).</li>
-                  <li><strong>.../api/entry/&#123;manager_id&#125;/:</strong> We use this to instantly pull your specific team's live status, including your exact bank balance and overall rank.</li>
-                </ul>
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-faint)', marginTop: '0.5rem', fontStyle: 'italic' }}>
-                  (Note: We can easily layer in the API-Football or Understat endpoints from the api_research.md document later if you want to pull deeper xG/xA stats, but for V1, we relied on the official FPL data feed).
-                </p>
-              </div>
-
-              <div>
-                <h3 style={{ marginBottom: '0.5rem', fontSize: '1.1rem' }}>2. How We Upgraded the ML Engine</h3>
-                <p style={{ fontSize: '0.9rem', color: 'var(--text-faint)', lineHeight: '1.5' }}>
-                  We moved away from your original idea of running "10 chaotic language models" at once, which would have hallucinated and crashed your laptop. Instead, we heavily upgraded <code>ml_engine.js</code> into a highly disciplined, deterministic model:
-                </p>
-                <ul style={{ fontSize: '0.9rem', color: 'var(--text-faint)', paddingLeft: '1.5rem', marginTop: '0.5rem' }}>
-                  <li style={{ marginBottom: '0.5rem' }}><strong>Strict Conservation Axioms:</strong> We hardcoded rules forcing the ML engine to act mathematically. It is now completely banned from suggesting a -4 point hit unless the xP (Expected Points) gain mathematically proves it is worth taking the penalty.</li>
-                  <li style={{ marginBottom: '0.5rem' }}><strong>Alien Logic Heuristics:</strong> We stripped the model of "human bias." By only feeding it raw numbers and injury flags from the ephemeral markdown file (<code>temp_fpl_analysis_state.md</code>), it cannot make emotional decisions based on favorite teams or news rumors.</li>
-                  <li><strong>Forced JSON Outputs:</strong> We upgraded the model's output layer so it cannot just spit out a generic paragraph. It is forced to output a strictly typed JSON object containing the Tactical Pitch layout and the Deep Justification Zone, providing the exact xG/xA math for every transfer it suggests.</li>
-                </ul>
-              </div>
-            </div>
-            </>
-          )}
-
+          
           {isProcessing && (
             <div className="panel processing-panel" style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
               <h2 className="panel-header text-center">Analysis in progress</h2>
