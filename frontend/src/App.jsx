@@ -445,6 +445,58 @@ function BudgetHeatmap({ team }) {
   );
 }
 
+
+function MinimalLanding({ image, setImage, transfers, setTransfers, fileInputRef, handleDrop, processImage, error }) {
+  return (
+    <div className="minimal-landing-fullpage">
+      <div className="minimal-content-wrapper">
+        <h1 className="minimal-title">FPL AI Assistant</h1>
+        <p className="minimal-subtitle">Deterministic squad analysis powered by computer vision.</p>
+        
+        <div 
+          className={`minimal-dropzone ${image ? "has-image" : ""}`}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={handleDrop}
+          onClick={() => fileInputRef.current.click()}
+        >
+          {image ? (
+            <div className="minimal-file-selected">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 6L9 17l-5-5"></path></svg>
+              <span>{image.name}</span>
+            </div>
+          ) : (
+            <div className="minimal-drop-content">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+              <p>Drag & drop your pitch screenshot</p>
+              <span className="minimal-hint">or click to browse</span>
+            </div>
+          )}
+          <input type="file" ref={fileInputRef} onChange={(e) => setImage(e.target.files[0])} hidden accept="image/png, image/jpeg, image/webp"/>
+        </div>
+
+        {image && (
+          <div className="minimal-actions">
+            <div className="minimal-select-wrapper">
+              <label>Free Transfers</label>
+              <select value={transfers} onChange={(e) => setTransfers(parseInt(e.target.value))}>
+                <option value={1}>1</option>
+                <option value={2}>2</option>
+                <option value={3}>3</option>
+                <option value={4}>4</option>
+                <option value={5}>5</option>
+                <option value={99}>Unlimited</option>
+              </select>
+            </div>
+            <button className="minimal-btn" onClick={processImage}>Run Analysis</button>
+            <button className="minimal-btn-outline" onClick={(e) => {e.stopPropagation(); setImage(null)}}>Clear</button>
+          </div>
+        )}
+        {error && <div className="minimal-error">{error}</div>}
+      </div>
+    </div>
+  );
+}
+
 function App() {
   const [image, setImage] = useState(null)
   const [transfers, setTransfers] = useState(1)
