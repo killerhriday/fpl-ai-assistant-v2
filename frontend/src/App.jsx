@@ -449,8 +449,48 @@ function BudgetHeatmap({ team }) {
 function MinimalLanding({ image, setImage, transfers, setTransfers, fileInputRef, handleDrop, processImage, error }) {
   return (
     <div className="minimal-landing-fullpage">
-      <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", zIndex: 0 }}>
-        <spline-viewer url="https://prod.spline.design/6Wq1Q7YGyM-iab9i/scene.splinecode"></spline-viewer>
+      <div className="football-scene">
+        <div className="pitch-lines">
+          <div className="center-circle"></div>
+          <div className="center-dot"></div>
+          <div className="halfway-line"></div>
+          <div className="penalty-box left-box"></div>
+          <div className="penalty-box right-box"></div>
+          <div className="goal-box left-goal"></div>
+          <div className="goal-box right-goal"></div>
+        </div>
+        <div className="floating-ball ball-1">
+          <div className="ball-inner">
+            <div className="pentagon"></div>
+            <div className="pentagon p2"></div>
+            <div className="pentagon p3"></div>
+          </div>
+        </div>
+        <div className="floating-ball ball-2">
+          <div className="ball-inner">
+            <div className="pentagon"></div>
+            <div className="pentagon p2"></div>
+            <div className="pentagon p3"></div>
+          </div>
+        </div>
+        <div className="data-particles">
+          <div className="particle p1"></div>
+          <div className="particle p2"></div>
+          <div className="particle p3"></div>
+          <div className="particle p4"></div>
+          <div className="particle p5"></div>
+          <div className="particle p6"></div>
+          <div className="particle p7"></div>
+          <div className="particle p8"></div>
+          <div className="particle p9"></div>
+          <div className="particle p10"></div>
+          <div className="particle p11"></div>
+          <div className="particle p12"></div>
+        </div>
+        <div className="stat-float s1">xG 0.87</div>
+        <div className="stat-float s2">Form ▲</div>
+        <div className="stat-float s3">£12.5m</div>
+        <div className="stat-float s4">GW1</div>
       </div>
       <div className="minimal-content-wrapper">
         <h1 className="minimal-title">FPL AI Assistant</h1>
